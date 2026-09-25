@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type ModalSize = "md" | "lg";
@@ -32,7 +33,11 @@ export function Modal({ title, subtitle, icon, size = "md", onClose, children, f
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  return (
+  // Rendered via portal into <body> rather than in place: a page's content column
+  // can be visually scaled (see the Zoom feature), and a `position: fixed` element
+  // nested inside a transformed ancestor would anchor to that ancestor instead of
+  // the viewport. Portaling keeps every modal correctly full-viewport regardless.
+  return createPortal(
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
@@ -65,6 +70,7 @@ export function Modal({ title, subtitle, icon, size = "md", onClose, children, f
 
         {footer && <div className="flex gap-2 px-6 pb-5">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
