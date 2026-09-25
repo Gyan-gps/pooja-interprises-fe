@@ -8,7 +8,10 @@ export function MainLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
 
-  const activeNav = NAV_ITEMS.find(n => n.path === pathname);
+  // Match "/orders/123" to the "/orders" nav item, not just an exact path.
+  const activeNav = NAV_ITEMS.find(n =>
+    n.path === "/" ? pathname === "/" : pathname === n.path || pathname.startsWith(`${n.path}/`)
+  );
 
   return (
     <div

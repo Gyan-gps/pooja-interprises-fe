@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Package, Activity, CheckCircle2, Truck, AlertTriangle,
@@ -11,28 +12,44 @@ import { PageHeader } from "../../components/common/PageHeader";
 import { KPICard } from "../../components/common/KPICard";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { monthlyData, clientTypeDist } from "../../lib/data";
+import { useAppData } from "../../lib/appDataContext";
+import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import type { Order } from "../../types";
+import { AssignTaskModal } from "../Staff/AssignTaskModal";
+import type { Task } from "../../types";
 
 const QUICK_ACTIONS = [
-  { label: "Create Order", icon: Plus, path: "/orders", bg: "bg-[#E84C1E]" },
-  { label: "Add Client", icon: Users, path: "/clients", bg: "bg-[#111827]" },
-  { label: "Production Board", icon: Layers, path: "/production", bg: "bg-purple-600" },
-  { label: "Assign Task", icon: UserCheck, path: "/staff", bg: "bg-amber-500" },
-];
+  { label: "Create Order", icon: Plus, action: "orders", bg: "bg-[#E84C1E]" },
+  { label: "Add Client", icon: Users, action: "clients", bg: "bg-[#111827]" },
+  { label: "Production Board", icon: Layers, action: "production", bg: "bg-purple-600" },
+  { label: "Assign Task", icon: UserCheck, action: "assign-task", bg: "bg-amber-500" },
+] as const;
 
-interface DashboardProps {
-  orders: Order[];
-}
-
-export function Dashboard({ orders }: DashboardProps) {
+export function Dashboard() {
   usePageTitle("Dashboard");
   const navigate = useNavigate();
+  const toast = useToast();
+  const { orders, staff, tasks, createTask } = useAppData();
+  const [showAssignTask, setShowAssignTask] = useState(false);
 
   const active = orders.filter(o => !["Delivered", "Overdue"].includes(o.status)).length;
   const completed = orders.filter(o => o.status === "Delivered").length;
   const overdue = orders.filter(o => o.status === "Overdue").length;
   const ready = orders.filter(o => o.status === "Ready").length;
+
+  function handleQuickAction(action: (typeof QUICK_ACTIONS)[number]["action"]) {
+    if (action === "assign-task") {
+      setShowAssignTask(true);
+    } else {
+      navigate(`/${action}`);
+    }
+  }
+
+  async function handleCreateTask(task: Task) {
+    await createTask(task);
+    setShowAssignTask(false);
+    toast.show(`Task "${task.name}" assigned.`);
+  }
 
   return (
     <div className="p-6 space-y-5">
@@ -97,11 +114,11 @@ export function Dashboard({ orders }: DashboardProps) {
       <div className="bg-card border border-border rounded-xl p-5">
         <h3 className="text-sm font-bold text-foreground mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {QUICK_ACTIONS.map(({ label, icon: Icon, path, bg }) => (
+          {QUICK_ACTIONS.map(({ label, icon: Icon, action, bg }) => (
             <button
               key={label}
               type="button"
-              onClick={() => navigate(path)}
+              onClick={() => handleQuickAction(action)}
               className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold text-white ${bg} hover:opacity-90 transition-opacity cursor-pointer`}
             >
               <Icon size={15} /> {label}
@@ -118,12 +135,17 @@ export function Dashboard({ orders }: DashboardProps) {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {orders.filter(o => o.status === "Ready").map(o => (
-              <div key={o.id} className="bg-white border border-emerald-200 rounded-xl p-3">
+              <button
+                type="button"
+                key={o.id}
+                onClick={() => navigate(`/orders/${o.id}`)}
+                className="bg-white border border-emerald-200 rounded-xl p-3 text-left hover:border-emerald-400 transition-colors cursor-pointer"
+              >
                 <div className="font-mono text-xs font-bold text-emerald-700">{o.id}</div>
                 <div className="text-xs font-semibold text-foreground mt-0.5 leading-snug">{o.client}</div>
                 <div className="text-[10px] text-muted-foreground">{o.type} · {o.qty.toLocaleString()} pcs</div>
                 <div className="text-[10px] font-mono text-emerald-600 mt-1">Due: {o.dueDate}</div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -147,7 +169,7 @@ export function Dashboard({ orders }: DashboardProps) {
             </thead>
             <tbody>
               {orders.slice(0, 6).map(o => (
-                <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                <tr key={o.id} onClick={() => navigate(`/orders/${o.id}`)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer">
                   <td className="px-4 py-3 font-mono text-xs font-bold text-foreground">{o.id}</td>
                   <td className="px-4 py-3 text-sm text-foreground">{o.client}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{o.type}</td>
@@ -160,6 +182,16 @@ export function Dashboard({ orders }: DashboardProps) {
           </table>
         </div>
       </div>
+
+      {showAssignTask && (
+        <AssignTaskModal
+          orders={orders}
+          staff={staff}
+          existingTasks={tasks}
+          onClose={() => setShowAssignTask(false)}
+          onCreate={handleCreateTask}
+        />
+      )}
     </div>
   );
 }

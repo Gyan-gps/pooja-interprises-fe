@@ -21,6 +21,11 @@ export interface Client {
   status: "Active" | "Inactive";
 }
 
+export interface OrderStatusEvent {
+  status: OrderStatus;
+  at: string;
+}
+
 export interface Order {
   id: string;
   clientId: number;
@@ -41,6 +46,7 @@ export interface Order {
   deliveredDate: string;
   deliveryNotes: string;
   acknowledgementFile: string;
+  statusHistory: OrderStatusEvent[];
 }
 
 export type StaffRole =
@@ -59,4 +65,26 @@ export interface StaffMember {
   initials: string;
   /** Tailwind background class used for the avatar chip. */
   color: string;
+}
+
+export type TaskPriority = "High" | "Medium" | "Low";
+export type TaskStatus = "Pending" | "In Progress" | "Completed";
+
+export interface Task {
+  id: number;
+  name: string;
+  order: string;
+  staffId: number;
+  priority: TaskPriority;
+  due: string;
+  status: TaskStatus;
+}
+
+export interface BusinessSettings {
+  businessName: string;
+  owner: string;
+  gstNumber: string;
+  contactNumber: string;
+  cityState: string;
+  financialYear: string;
 }

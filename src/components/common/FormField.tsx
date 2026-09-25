@@ -49,20 +49,56 @@ export function TextField({ label, value, onChange, placeholder, type = "text", 
   );
 }
 
-interface SelectFieldProps {
+interface TextAreaFieldProps {
   label: string;
   value: string;
-  options: readonly string[];
   onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
 }
 
-export function SelectField({ label, value, options, onChange }: SelectFieldProps) {
+export function TextAreaField({ label, value, onChange, placeholder, rows = 3 }: TextAreaFieldProps) {
   return (
     <FieldShell label={label}>
       {id => (
+        <textarea
+          id={id}
+          rows={rows}
+          className={`${CONTROL_CLS} resize-none`}
+          placeholder={placeholder}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+        />
+      )}
+    </FieldShell>
+  );
+}
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  /** Plain strings are used as both value and label; pass {value,label} pairs when they differ (e.g. an id backed by a name). */
+  options: readonly string[] | readonly SelectOption[];
+  onChange: (value: string) => void;
+  error?: string;
+}
+
+function toOption(o: string | SelectOption): SelectOption {
+  return typeof o === "string" ? { value: o, label: o } : o;
+}
+
+export function SelectField({ label, value, options, onChange, error }: SelectFieldProps) {
+  return (
+    <FieldShell label={label} error={error}>
+      {id => (
         <select id={id} className={CONTROL_CLS} value={value} onChange={e => onChange(e.target.value)}>
-          {options.map(o => (
-            <option key={o}>{o}</option>
+          {options.map(toOption).map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
       )}

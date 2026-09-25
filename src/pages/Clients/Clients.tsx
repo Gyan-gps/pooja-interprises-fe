@@ -1,41 +1,30 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
-import { Plus, Search, Eye } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Search } from "lucide-react";
 import { PageHeader } from "../../components/common/PageHeader";
 import { Button } from "../../components/common/Button";
 import { FilterPill } from "../../components/common/FilterPill";
 import { StatusBadge } from "../../components/common/StatusBadge";
+import { DataTable, type DataTableColumn } from "../../components/common/DataTable";
 import { TYPE_CLS } from "../../lib/constants";
+import { useAppData } from "../../lib/appDataContext";
+import { useToast } from "../../lib/toast";
+import { useUrlState } from "../../hooks/useUrlState";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import { ClientDetail } from "./ClientDetail";
 import { AddClientModal } from "./AddClientModal";
-import type { Client, Order } from "../../types";
+import type { Client } from "../../types";
 
 const TYPE_FILTERS = ["All", "School", "Hospital", "Coaching", "College", "Corporate"];
 
-interface ClientsProps {
-  orders: Order[];
-  setOrders: Dispatch<SetStateAction<Order[]>>;
-  clients: Client[];
-  setClients: Dispatch<SetStateAction<Client[]>>;
-}
-
-export function Clients({ orders, setOrders, clients, setClients }: ClientsProps) {
+export function Clients() {
   usePageTitle("Clients");
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All");
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [showAddClient, setShowAddClient] = useState(false);
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { clients, createClient } = useAppData();
 
-  if (selectedClient) {
-    return (
-      <ClientDetail
-        client={clients.find(c => c.id === selectedClient.id) ?? selectedClient}
-        orders={orders}
-        setOrders={setOrders}
-        onBack={() => setSelectedClient(null)}
-      />
-    );
-  }
+  const [search, setSearch] = useUrlState("q", "");
+  const [typeFilter, setTypeFilter] = useUrlState("type", "All");
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const filtered = clients.filter(c => {
     const ok = typeFilter === "All" || c.type === typeFilter;
@@ -43,10 +32,29 @@ export function Clients({ orders, setOrders, clients, setClients }: ClientsProps
     return ok && (c.name.toLowerCase().includes(q) || c.org.toLowerCase().includes(q));
   });
 
-  function handleCreateClient(client: Client) {
-    setClients(prev => [client, ...prev]);
+  async function handleCreateClient(client: Client) {
+    await createClient(client);
     setShowAddClient(false);
+    toast.show(`${client.name} added.`);
   }
+
+  const columns: DataTableColumn<Client>[] = [
+    {
+      key: "name", header: "Client Name", sortValue: c => c.name,
+      render: c => (
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-full bg-[#E84C1E] text-white flex items-center justify-center text-xs font-bold shrink-0">{c.name.charAt(0)}</div>
+          <span className="text-sm font-semibold text-foreground">{c.name}</span>
+        </div>
+      ),
+    },
+    { key: "org", header: "Organization", sortValue: c => c.org, render: c => <span className="text-sm text-muted-foreground">{c.org}</span> },
+    { key: "type", header: "Type", render: c => <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[c.type]}`}>{c.type}</span> },
+    { key: "mobile", header: "Mobile", render: c => <span className="font-mono text-xs text-foreground">{c.mobile}</span> },
+    { key: "orders", header: "Orders", sortValue: c => c.orders, render: c => <span className="text-sm font-bold text-center block text-foreground">{c.orders}</span> },
+    { key: "lastOrder", header: "Last Order", sortValue: c => c.lastOrder, render: c => <span className="font-mono text-xs text-muted-foreground">{c.lastOrder}</span> },
+    { key: "status", header: "Status", render: c => <StatusBadge label={c.status} /> },
+  ];
 
   return (
     <div className="p-6">
@@ -71,43 +79,14 @@ export function Clients({ orders, setOrders, clients, setClients }: ClientsProps
           {TYPE_FILTERS.map(t => <FilterPill key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t)} />)}
         </div>
       </div>
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                {["Client Name", "Organization", "Type", "Mobile", "Orders", "Last Order", "Status", ""].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(c => (
-                <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-[#E84C1E] text-white flex items-center justify-center text-xs font-bold shrink-0">{c.name.charAt(0)}</div>
-                      <span className="text-sm font-semibold text-foreground">{c.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{c.org}</td>
-                  <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[c.type]}`}>{c.type}</span></td>
-                  <td className="px-4 py-3 font-mono text-xs text-foreground">{c.mobile}</td>
-                  <td className="px-4 py-3 text-sm font-bold text-center text-foreground">{c.orders}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.lastOrder}</td>
-                  <td className="px-4 py-3"><StatusBadge label={c.status} /></td>
-                  <td className="px-4 py-3">
-                    <button type="button" onClick={() => setSelectedClient(c)} className="flex items-center gap-1 text-xs text-[#E84C1E] font-semibold hover:underline cursor-pointer">
-                      <Eye size={12} /> View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No clients found.</div>}
-      </div>
+
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        rowKey={c => c.id}
+        onRowClick={c => navigate(`/clients/${c.id}`)}
+        emptyMessage="No clients found."
+      />
 
       {showAddClient && (
         <AddClientModal

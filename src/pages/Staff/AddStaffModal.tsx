@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Modal } from "../../components/common/Modal";
 import { Button } from "../../components/common/Button";
 import { SelectField, TextField } from "../../components/common/FormField";
+import { nextNumericId } from "../../lib/id";
+import { required, uniqueBy } from "../../lib/validation";
 import type { StaffMember, StaffRole } from "../../types";
 
 const STAFF_ROLES: StaffRole[] = ["Designer", "Machine Operator", "Binder", "Delivery Person", "Manager"];
@@ -37,17 +39,15 @@ export function AddStaffModal({ existingStaff, onClose, onCreate }: AddStaffModa
 
   function handleSubmit() {
     const name = form.name.trim();
-    if (!name) {
-      setErrors({ name: "Staff name is required." });
-      return;
-    }
-    if (existingStaff.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-      setErrors({ name: "This staff member is already on the team." });
+    const nameError = required(form.name, "Staff name is required.")
+      ?? uniqueBy(form.name, existingStaff, s => s.name, "This staff member is already on the team.");
+    if (nameError) {
+      setErrors({ name: nameError });
       return;
     }
 
     onCreate({
-      id: Math.max(0, ...existingStaff.map(s => s.id)) + 1,
+      id: nextNumericId(existingStaff),
       name,
       role: form.role,
       active: 0,

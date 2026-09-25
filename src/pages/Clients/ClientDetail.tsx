@@ -1,15 +1,25 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
-import { ArrowLeft, Plus } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { Button } from "../../components/common/Button";
 import { Modal } from "../../components/common/Modal";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { FilterPill } from "../../components/common/FilterPill";
 import { StatusBadge } from "../../components/common/StatusBadge";
-import { ORDER_TYPES } from "../../lib/data";
+import { SelectField, TextAreaField, TextField } from "../../components/common/FormField";
+import { CURRENT_DATE, ORDER_TYPES } from "../../lib/data";
 import { TYPE_CLS } from "../../lib/constants";
-import type { Client, Order } from "../../types";
+import { nextOrderId } from "../../lib/id";
+import { formatMobile, mobileNumber, required } from "../../lib/validation";
+import { useAppData } from "../../lib/appDataContext";
+import { useToast } from "../../lib/toast";
+import { usePageTitle } from "../../hooks/usePageTitle";
+import type { Client, ClientType, Order } from "../../types";
 
 const CLIENT_TABS = ["overview", "orders", "notes"] as const;
 type ClientTab = (typeof CLIENT_TABS)[number];
+const CLIENT_TYPES: ClientType[] = ["School", "Hospital", "Coaching", "College", "Corporate"];
+const COLOR_MODES = ["Color", "Black & White", "Spot Color"] as const;
 
 const CLIENT_NOTES: Record<Client["type"], string> = {
   School: "Prefers delivery before exam season. Quality paper (80 GSM) required for all books. Always include a delivery challan.",
@@ -32,50 +42,116 @@ interface OrderFormState {
 }
 
 const EMPTY_ORDER_FORM: OrderFormState = {
-  type: ORDER_TYPES[0], qty: "", orderDate: "2026-06-23", dueDate: "",
+  type: ORDER_TYPES[0], qty: "", orderDate: CURRENT_DATE, dueDate: "",
   colorMode: "Color", paperType: "", size: "", binding: "", notes: "",
 };
 
-interface ClientDetailProps {
-  client: Client;
-  orders: Order[];
-  setOrders: Dispatch<SetStateAction<Order[]>>;
-  onBack: () => void;
+interface EditForm {
+  name: string;
+  org: string;
+  mobile: string;
+  type: ClientType;
 }
 
-export function ClientDetail({ client, orders, setOrders, onBack }: ClientDetailProps) {
+export function ClientDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { clients, orders, createOrder, updateClient, deleteClient } = useAppData();
+
+  const client = clients.find(c => c.id === Number(id));
+
   const [activeTab, setActiveTab] = useState<ClientTab>("overview");
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [orderYearFilter, setOrderYearFilter] = useState("All");
   const [orderForm, setOrderForm] = useState<OrderFormState>(EMPTY_ORDER_FORM);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editErrors, setEditErrors] = useState<Partial<Record<keyof EditForm, string>>>({});
+  const [showDelete, setShowDelete] = useState(false);
+
+  usePageTitle(client ? client.name : "Client not found");
+
+  if (!client) {
+    return (
+      <div className="p-6">
+        <Link to="/clients" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
+          <ArrowLeft size={14} /> Back to Clients
+        </Link>
+        <div className="bg-card border border-border rounded-xl p-8 text-center">
+          <p className="text-sm text-muted-foreground">No client found with id "{id}".</p>
+        </div>
+      </div>
+    );
+  }
 
   const clientOrders = orders.filter(o => o.clientId === client.id);
   const orderYears = Array.from(new Set(clientOrders.map(o => o.orderDate.slice(0, 4)))).sort((a, b) => Number(b) - Number(a));
   const visibleOrders = orderYearFilter === "All" ? clientOrders : clientOrders.filter(o => o.orderDate.startsWith(orderYearFilter));
 
-  function handleCreateOrder() {
+  async function handleCreateOrder() {
     if (!orderForm.qty) return;
-    const nextId = `PJE-${String(orders.length + 90).padStart(3, "0")}`;
-    const o: Order = {
-      id: nextId, clientId: client.id, client: client.org,
+    const order: Order = {
+      id: nextOrderId(orders), clientId: client!.id, client: client!.org,
       type: orderForm.type, qty: Number(orderForm.qty),
       dueDate: orderForm.dueDate || "TBD", orderDate: orderForm.orderDate,
       status: "New", staff: "—",
       paperType: orderForm.paperType, size: orderForm.size,
       colorMode: orderForm.colorMode, binding: orderForm.binding, notes: orderForm.notes,
       deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "",
+      statusHistory: [{ status: "New", at: orderForm.orderDate }],
     };
-    setOrders(prev => [o, ...prev]);
+    const created = await createOrder(order);
     setShowCreateOrder(false);
     setOrderForm(EMPTY_ORDER_FORM);
     setActiveTab("orders");
+    toast.show(`Order ${created.id} created for ${client!.name}.`);
+  }
+
+  function startEdit() {
+    setEditForm({ name: client!.name, org: client!.org, mobile: client!.mobile, type: client!.type });
+    setEditErrors({});
+    setIsEditing(true);
+  }
+
+  async function saveEdit() {
+    if (!editForm) return;
+    const nextErrors = {
+      name: required(editForm.name, "Contact name is required."),
+      org: required(editForm.org, "Organization is required."),
+      mobile: mobileNumber(editForm.mobile),
+    };
+    if (nextErrors.name || nextErrors.org || nextErrors.mobile) {
+      setEditErrors(nextErrors);
+      return;
+    }
+    await updateClient(client!.id, {
+      name: editForm.name.trim(),
+      org: editForm.org.trim(),
+      mobile: formatMobile(editForm.mobile),
+      type: editForm.type,
+    });
+    setIsEditing(false);
+    toast.show("Client updated.");
+  }
+
+  async function toggleActive() {
+    const nextStatus = client!.status === "Active" ? "Inactive" : "Active";
+    await updateClient(client!.id, { status: nextStatus });
+    toast.show(`${client!.name} marked ${nextStatus.toLowerCase()}.`);
+  }
+
+  async function handleDelete() {
+    await deleteClient(client!.id);
+    navigate("/clients");
+    toast.show(`${client!.name} deleted.`);
   }
 
   return (
     <div className="p-6">
-      <button type="button" onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 cursor-pointer">
+      <Link to="/clients" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 w-fit">
         <ArrowLeft size={14} /> Back to Clients
-      </button>
+      </Link>
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="p-5 border-b border-border flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -89,7 +165,7 @@ export function ClientDetail({ client, orders, setOrders, onBack }: ClientDetail
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-end">
             <div className="text-center">
               <div className="text-xl font-bold text-foreground">{clientOrders.length || client.orders}</div>
               <div className="text-[10px] text-muted-foreground">Orders</div>
@@ -102,131 +178,168 @@ export function ClientDetail({ client, orders, setOrders, onBack }: ClientDetail
               <div className="text-xl font-bold text-amber-600">{clientOrders.filter(o => !["Delivered", "Overdue"].includes(o.status)).length}</div>
               <div className="text-[10px] text-muted-foreground">Active</div>
             </div>
-            <Button variant="primary" onClick={() => setShowCreateOrder(true)}><Plus size={14} /> New Order</Button>
+            {!isEditing && (
+              <div className="flex items-center gap-2">
+                <Button variant="primary" onClick={() => setShowCreateOrder(true)}><Plus size={14} /> New Order</Button>
+                <Button variant="secondary" onClick={startEdit}><Pencil size={13} /> Edit</Button>
+                <button
+                  type="button"
+                  onClick={toggleActive}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-foreground border border-border hover:bg-muted transition-colors cursor-pointer"
+                >
+                  <Power size={13} /> {client.status === "Active" ? "Deactivate" : "Activate"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDelete(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/10 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={13} /> Delete
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex border-b border-border">
-          {CLIENT_TABS.map(tab => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 text-sm font-semibold capitalize transition-colors cursor-pointer ${activeTab === tab ? "border-b-2 border-[#E84C1E] text-[#E84C1E]" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {tab}
-              {tab === "orders" && clientOrders.length > 0 && (
-                <span className="ml-1.5 font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{clientOrders.length}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-5">
-          {activeTab === "overview" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Contact Information</h4>
-                <div className="space-y-2.5 text-sm">
-                  {[
-                    { l: "Mobile", v: client.mobile, mono: true },
-                    { l: "Organization", v: client.org, mono: false },
-                    { l: "Last Order", v: client.lastOrder, mono: true },
-                    { l: "Status", v: client.status, mono: false },
-                  ].map(({ l, v, mono }) => (
-                    <div key={l} className="flex items-center gap-2">
-                      <span className="text-muted-foreground w-28 text-xs">{l}</span>
-                      <span className={`font-medium ${mono ? "font-mono text-xs" : ""}`}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Total Orders", val: clientOrders.length || client.orders, bg: "bg-muted/40", cls: "text-foreground" },
-                  { label: "Delivered", val: clientOrders.filter(o => o.status === "Delivered").length, bg: "bg-emerald-50", cls: "text-emerald-700" },
-                  { label: "Active", val: clientOrders.filter(o => !["Delivered", "Overdue"].includes(o.status)).length, bg: "bg-orange-50", cls: "text-orange-700" },
-                  { label: "Overdue", val: clientOrders.filter(o => o.status === "Overdue").length, bg: "bg-red-50", cls: "text-red-700" },
-                ].map(({ label, val, bg, cls }) => (
-                  <div key={label} className={`${bg} rounded-xl p-3 text-center`}>
-                    <div className={`text-2xl font-bold ${cls}`}>{val}</div>
-                    <div className="text-[10px] text-muted-foreground">{label}</div>
-                  </div>
-                ))}
-              </div>
+        {isEditing && editForm ? (
+          <div className="p-5">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Edit Client</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
+              <TextField label="Contact Person *" value={editForm.name} onChange={v => { setEditForm(p => p && { ...p, name: v }); setEditErrors(p => ({ ...p, name: undefined })); }} error={editErrors.name} />
+              <TextField label="Organization *" value={editForm.org} onChange={v => { setEditForm(p => p && { ...p, org: v }); setEditErrors(p => ({ ...p, org: undefined })); }} error={editErrors.org} />
+              <TextField label="Mobile *" type="tel" value={editForm.mobile} onChange={v => { setEditForm(p => p && { ...p, mobile: v }); setEditErrors(p => ({ ...p, mobile: undefined })); }} error={editErrors.mobile} />
+              <SelectField label="Client Type" value={editForm.type} options={CLIENT_TYPES} onChange={v => setEditForm(p => p && { ...p, type: v as ClientType })} />
             </div>
-          )}
+            <div className="flex gap-2 mt-5">
+              <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
+              <Button variant="primary" onClick={saveEdit}>Save Changes</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex border-b border-border">
+              {CLIENT_TABS.map(tab => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-3 text-sm font-semibold capitalize transition-colors cursor-pointer ${activeTab === tab ? "border-b-2 border-[#E84C1E] text-[#E84C1E]" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {tab}
+                  {tab === "orders" && clientOrders.length > 0 && (
+                    <span className="ml-1.5 font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{clientOrders.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-          {activeTab === "orders" && (
-            <div>
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Year:</span>
-                  {["All", ...orderYears].map(yr => (
-                    <FilterPill key={yr} label={yr} active={orderYearFilter === yr} onClick={() => setOrderYearFilter(yr)} />
-                  ))}
-                </div>
-                <span className="text-xs text-muted-foreground font-mono">
-                  {visibleOrders.length} order{visibleOrders.length !== 1 ? "s" : ""}{orderYearFilter !== "All" ? ` in ${orderYearFilter}` : ""}
-                </span>
-              </div>
-
-              {visibleOrders.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">No orders found{orderYearFilter !== "All" ? ` for ${orderYearFilter}` : ""}.</div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      {["Order ID", "Type", "Qty", "Paper / Size", "Order Date", "Due Date", "Status"].map(h => (
-                        <th key={h} className="pb-2.5 text-left text-xs text-muted-foreground font-bold">{h}</th>
+            <div className="p-5">
+              {activeTab === "overview" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Contact Information</h4>
+                    <div className="space-y-2.5 text-sm">
+                      {[
+                        { l: "Mobile", v: client.mobile, mono: true },
+                        { l: "Organization", v: client.org, mono: false },
+                        { l: "Last Order", v: client.lastOrder, mono: true },
+                        { l: "Status", v: client.status, mono: false },
+                      ].map(({ l, v, mono }) => (
+                        <div key={l} className="flex items-center gap-2">
+                          <span className="text-muted-foreground w-28 text-xs">{l}</span>
+                          <span className={`font-medium ${mono ? "font-mono text-xs" : ""}`}>{v}</span>
+                        </div>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleOrders.map(o => (
-                      <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                        <td className="py-3 font-mono text-xs font-bold text-foreground">{o.id}</td>
-                        <td className="py-3 text-xs text-muted-foreground">{o.type}</td>
-                        <td className="py-3 font-mono text-xs">{o.qty.toLocaleString()}</td>
-                        <td className="py-3 text-xs text-muted-foreground">{[o.paperType, o.size].filter(Boolean).join(" · ") || "—"}</td>
-                        <td className="py-3 font-mono text-xs text-muted-foreground">{o.orderDate}</td>
-                        <td className="py-3 font-mono text-xs text-muted-foreground">{o.dueDate}</td>
-                        <td className="py-3"><StatusBadge label={o.status} /></td>
-                      </tr>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Total Orders", val: clientOrders.length || client.orders, bg: "bg-muted/40", cls: "text-foreground" },
+                      { label: "Delivered", val: clientOrders.filter(o => o.status === "Delivered").length, bg: "bg-emerald-50", cls: "text-emerald-700" },
+                      { label: "Active", val: clientOrders.filter(o => !["Delivered", "Overdue"].includes(o.status)).length, bg: "bg-orange-50", cls: "text-orange-700" },
+                      { label: "Overdue", val: clientOrders.filter(o => o.status === "Overdue").length, bg: "bg-red-50", cls: "text-red-700" },
+                    ].map(({ label, val, bg, cls }) => (
+                      <div key={label} className={`${bg} rounded-xl p-3 text-center`}>
+                        <div className={`text-2xl font-bold ${cls}`}>{val}</div>
+                        <div className="text-[10px] text-muted-foreground">{label}</div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               )}
 
-              {orderYearFilter === "All" && orderYears.length > 0 && (
-                <div className="mt-5 pt-4 border-t border-border">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Year-wise Summary</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {orderYears.map(yr => {
-                      const yrOrders = clientOrders.filter(o => o.orderDate.startsWith(yr));
-                      return (
-                        <button key={yr} type="button" onClick={() => setOrderYearFilter(yr)} className="bg-muted/40 hover:bg-muted/80 rounded-xl p-3 text-left transition-colors cursor-pointer">
-                          <div className="font-mono text-sm font-bold text-foreground">{yr}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">{yrOrders.length} orders</div>
-                          <div className="text-xs font-bold text-emerald-600 mt-1">{yrOrders.filter(o => o.status === "Delivered").length} delivered</div>
-                        </button>
-                      );
-                    })}
+              {activeTab === "orders" && (
+                <div>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Year:</span>
+                      {["All", ...orderYears].map(yr => (
+                        <FilterPill key={yr} label={yr} active={orderYearFilter === yr} onClick={() => setOrderYearFilter(yr)} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {visibleOrders.length} order{visibleOrders.length !== 1 ? "s" : ""}{orderYearFilter !== "All" ? ` in ${orderYearFilter}` : ""}
+                    </span>
+                  </div>
+
+                  {visibleOrders.length === 0 ? (
+                    <div className="py-10 text-center text-sm text-muted-foreground">No orders found{orderYearFilter !== "All" ? ` for ${orderYearFilter}` : ""}.</div>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          {["Order ID", "Type", "Qty", "Paper / Size", "Order Date", "Due Date", "Status"].map(h => (
+                            <th key={h} className="pb-2.5 text-left text-xs text-muted-foreground font-bold">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleOrders.map(o => (
+                          <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => navigate(`/orders/${o.id}`)}>
+                            <td className="py-3 font-mono text-xs font-bold text-foreground">{o.id}</td>
+                            <td className="py-3 text-xs text-muted-foreground">{o.type}</td>
+                            <td className="py-3 font-mono text-xs">{o.qty.toLocaleString()}</td>
+                            <td className="py-3 text-xs text-muted-foreground">{[o.paperType, o.size].filter(Boolean).join(" · ") || "—"}</td>
+                            <td className="py-3 font-mono text-xs text-muted-foreground">{o.orderDate}</td>
+                            <td className="py-3 font-mono text-xs text-muted-foreground">{o.dueDate}</td>
+                            <td className="py-3"><StatusBadge label={o.status} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {orderYearFilter === "All" && orderYears.length > 0 && (
+                    <div className="mt-5 pt-4 border-t border-border">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Year-wise Summary</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {orderYears.map(yr => {
+                          const yrOrders = clientOrders.filter(o => o.orderDate.startsWith(yr));
+                          return (
+                            <button key={yr} type="button" onClick={() => setOrderYearFilter(yr)} className="bg-muted/40 hover:bg-muted/80 rounded-xl p-3 text-left transition-colors cursor-pointer">
+                              <div className="font-mono text-sm font-bold text-foreground">{yr}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">{yrOrders.length} orders</div>
+                              <div className="text-xs font-bold text-emerald-600 mt-1">{yrOrders.filter(o => o.status === "Delivered").length} delivered</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "notes" && (
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Special Instructions</h4>
+                  <div className="bg-muted/40 rounded-xl p-4 text-sm text-muted-foreground leading-relaxed">
+                    {CLIENT_NOTES[client.type]}
                   </div>
                 </div>
               )}
             </div>
-          )}
-
-          {activeTab === "notes" && (
-            <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Special Instructions</h4>
-              <div className="bg-muted/40 rounded-xl p-4 text-sm text-muted-foreground leading-relaxed">
-                {CLIENT_NOTES[client.type]}
-              </div>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {showCreateOrder && (
@@ -241,53 +354,43 @@ export function ClientDetail({ client, orders, setOrders, onBack }: ClientDetail
             </>
           }
         >
-              <div className="flex items-center gap-3 bg-muted/40 rounded-xl px-4 py-3">
-                <div className="w-8 h-8 rounded-lg bg-[#E84C1E] flex items-center justify-center text-white font-bold text-sm shrink-0">{client.name.charAt(0)}</div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">{client.name}</div>
-                  <div className="text-xs text-muted-foreground">{client.org} · {client.mobile}</div>
-                </div>
-                <span className={`ml-auto px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[client.type]}`}>{client.type}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label htmlFor="co-type" className="text-xs font-semibold text-muted-foreground block mb-1">Order Type *</label>
-                  <select id="co-type" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" value={orderForm.type} onChange={e => setOrderForm(p => ({ ...p, type: e.target.value }))}>
-                    {ORDER_TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="co-qty" className="text-xs font-semibold text-muted-foreground block mb-1">Quantity *</label>
-                  <input id="co-qty" type="number" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" placeholder="500" value={orderForm.qty} onChange={e => setOrderForm(p => ({ ...p, qty: e.target.value }))} />
-                </div>
-                <div>
-                  <label htmlFor="co-color" className="text-xs font-semibold text-muted-foreground block mb-1">Color Mode</label>
-                  <select id="co-color" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" value={orderForm.colorMode} onChange={e => setOrderForm(p => ({ ...p, colorMode: e.target.value }))}>
-                    <option>Color</option><option>Black & White</option><option>Spot Color</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="co-paper" className="text-xs font-semibold text-muted-foreground block mb-1">Paper Type</label>
-                  <input id="co-paper" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" placeholder="80 GSM Maplitho" value={orderForm.paperType} onChange={e => setOrderForm(p => ({ ...p, paperType: e.target.value }))} />
-                </div>
-                <div>
-                  <label htmlFor="co-size" className="text-xs font-semibold text-muted-foreground block mb-1">Size</label>
-                  <input id="co-size" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" placeholder="A4, A3, 6×9" value={orderForm.size} onChange={e => setOrderForm(p => ({ ...p, size: e.target.value }))} />
-                </div>
-                <div>
-                  <label htmlFor="co-order-date" className="text-xs font-semibold text-muted-foreground block mb-1">Order Date</label>
-                  <input id="co-order-date" type="date" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" value={orderForm.orderDate} onChange={e => setOrderForm(p => ({ ...p, orderDate: e.target.value }))} />
-                </div>
-                <div>
-                  <label htmlFor="co-due-date" className="text-xs font-semibold text-muted-foreground block mb-1">Delivery Date</label>
-                  <input id="co-due-date" type="date" className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30" value={orderForm.dueDate} onChange={e => setOrderForm(p => ({ ...p, dueDate: e.target.value }))} />
-                </div>
-                <div className="col-span-2">
-                  <label htmlFor="co-notes" className="text-xs font-semibold text-muted-foreground block mb-1">Special Instructions</label>
-                  <textarea id="co-notes" rows={2} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none" placeholder="Any special requirements..." value={orderForm.notes} onChange={e => setOrderForm(p => ({ ...p, notes: e.target.value }))} />
-                </div>
-              </div>
+          <div className="flex items-center gap-3 bg-muted/40 rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-[#E84C1E] flex items-center justify-center text-white font-bold text-sm shrink-0">{client.name.charAt(0)}</div>
+            <div>
+              <div className="text-sm font-bold text-foreground">{client.name}</div>
+              <div className="text-xs text-muted-foreground">{client.org} · {client.mobile}</div>
+            </div>
+            <span className={`ml-auto px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[client.type]}`}>{client.type}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <SelectField label="Order Type *" value={orderForm.type} options={ORDER_TYPES} onChange={v => setOrderForm(p => ({ ...p, type: v }))} />
+            </div>
+            <TextField label="Quantity *" type="number" placeholder="500" value={orderForm.qty} onChange={v => setOrderForm(p => ({ ...p, qty: v }))} />
+            <SelectField label="Color Mode" value={orderForm.colorMode} options={COLOR_MODES} onChange={v => setOrderForm(p => ({ ...p, colorMode: v }))} />
+            <TextField label="Paper Type" placeholder="80 GSM Maplitho" value={orderForm.paperType} onChange={v => setOrderForm(p => ({ ...p, paperType: v }))} />
+            <TextField label="Size" placeholder="A4, A3, 6×9" value={orderForm.size} onChange={v => setOrderForm(p => ({ ...p, size: v }))} />
+            <TextField label="Order Date" type="date" value={orderForm.orderDate} onChange={v => setOrderForm(p => ({ ...p, orderDate: v }))} />
+            <TextField label="Delivery Date" type="date" value={orderForm.dueDate} onChange={v => setOrderForm(p => ({ ...p, dueDate: v }))} />
+            <div className="col-span-2">
+              <TextAreaField label="Special Instructions" rows={2} placeholder="Any special requirements..." value={orderForm.notes} onChange={v => setOrderForm(p => ({ ...p, notes: v }))} />
+            </div>
+          </div>
         </Modal>
+      )}
+
+      {showDelete && (
+        <ConfirmDialog
+          title="Delete Client"
+          description={
+            clientOrders.length > 0
+              ? `${client.name} has ${clientOrders.length} order${clientOrders.length !== 1 ? "s" : ""} on record. Deleting the client keeps those orders (they'll still show "${client.org}"), but removes the client profile permanently.`
+              : `This permanently removes ${client.name} (${client.org}). This can't be undone.`
+          }
+          confirmLabel="Delete Client"
+          onConfirm={handleDelete}
+          onClose={() => setShowDelete(false)}
+        />
       )}
     </div>
   );

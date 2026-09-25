@@ -1,32 +1,34 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronRight, AlertTriangle } from "lucide-react";
 import { PageHeader } from "../../components/common/PageHeader";
 import { KANBAN_COLORS } from "../../lib/constants";
 import { KANBAN_COLS } from "../../lib/data";
+import { withStatusChange } from "../../lib/orderHistory";
+import { useAppData } from "../../lib/appDataContext";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import type { Order, OrderStatus } from "../../types";
+import type { OrderStatus } from "../../types";
 
-interface ProductionProps {
-  orders: Order[];
-  setOrders: Dispatch<SetStateAction<Order[]>>;
-}
-
-export function Production({ orders, setOrders }: ProductionProps) {
+export function Production() {
   usePageTitle("Production");
+  const navigate = useNavigate();
+  const { orders, updateOrder } = useAppData();
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const activeOrders = orders.filter(o => o.status !== "Overdue");
 
   function handleDrop(col: OrderStatus) {
-    if (dragging) setOrders(prev => prev.map(o => o.id === dragging ? { ...o, status: col } : o));
-    setDragging(null); setDragOver(null);
+    const order = orders.find(o => o.id === dragging);
+    if (order) updateOrder(order.id, withStatusChange(order, col));
+    setDragging(null);
+    setDragOver(null);
   }
 
   const overdueOrders = orders.filter(o => o.status === "Overdue");
 
   return (
     <div className="p-6">
-      <PageHeader title="Production Tracker" subtitle="Drag cards between columns to update workflow status" />
+      <PageHeader title="Production Tracker" subtitle="Drag cards between columns to update workflow status, or click one to open it" />
       <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-2">
         {KANBAN_COLS.map((col, i) => (
           <div key={col} className="flex items-center gap-1 shrink-0">
@@ -54,8 +56,13 @@ export function Production({ orders, setOrders }: ProductionProps) {
                 </div>
                 <div className="space-y-2 px-1 pb-2 min-h-[180px]">
                   {colOrders.map(o => (
-                    <div key={o.id} draggable onDragStart={() => setDragging(o.id)} onDragEnd={() => { setDragging(null); setDragOver(null); }}
-                      className={`bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing select-none shadow-sm hover:shadow-md transition-all ${dragging === o.id ? "opacity-40 scale-95" : ""}`}
+                    <div
+                      key={o.id}
+                      draggable
+                      onDragStart={() => setDragging(o.id)}
+                      onDragEnd={() => { setDragging(null); setDragOver(null); }}
+                      onClick={() => navigate(`/orders/${o.id}`)}
+                      className={`bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing select-none shadow-sm hover:shadow-md hover:border-[#E84C1E]/40 transition-all ${dragging === o.id ? "opacity-40 scale-95" : ""}`}
                     >
                       <div className="font-mono text-[10px] font-bold text-muted-foreground mb-1">{o.id}</div>
                       <div className="text-xs font-bold text-foreground leading-snug mb-1">{o.client}</div>
@@ -81,12 +88,17 @@ export function Production({ orders, setOrders }: ProductionProps) {
           <h3 className="text-sm font-bold text-red-700 mb-3 flex items-center gap-2"><AlertTriangle size={14} /> Overdue Orders</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {overdueOrders.map(o => (
-              <div key={o.id} className="bg-white border border-red-200 rounded-xl p-3">
+              <button
+                type="button"
+                key={o.id}
+                onClick={() => navigate(`/orders/${o.id}`)}
+                className="bg-white border border-red-200 rounded-xl p-3 text-left hover:border-red-400 transition-colors cursor-pointer"
+              >
                 <div className="font-mono text-xs font-bold text-red-600">{o.id}</div>
                 <div className="text-xs font-semibold text-foreground mt-0.5 leading-snug">{o.client}</div>
                 <div className="text-[10px] text-muted-foreground">{o.type}</div>
                 <div className="text-xs font-bold text-red-600 mt-1.5">Due: {o.dueDate}</div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

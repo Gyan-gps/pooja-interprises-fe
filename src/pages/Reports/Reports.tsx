@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Download } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -6,18 +7,21 @@ import { PageHeader } from "../../components/common/PageHeader";
 import { FilterPill } from "../../components/common/FilterPill";
 import { ORDER_TYPES, monthlyData } from "../../lib/data";
 import { TYPE_CLS } from "../../lib/constants";
+import { downloadCsv } from "../../lib/csv";
+import { useAppData } from "../../lib/appDataContext";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import type { Client, Order, StaffMember } from "../../types";
 
-interface ReportsProps {
-  orders: Order[];
-  clients: Client[];
-  staff: StaffMember[];
-}
+const TABS = [
+  { key: "orders", label: "Order-wise" },
+  { key: "clients", label: "Client-wise" },
+  { key: "staff", label: "Staff Productivity" },
+  { key: "monthly", label: "Monthly Trend" },
+] as const;
 
-export function Reports({ orders, clients, staff }: ReportsProps) {
+export function Reports() {
   usePageTitle("Reports");
-  const [reportType, setReportType] = useState("orders");
+  const { orders, clients, staff } = useAppData();
+  const [reportType, setReportType] = useState<(typeof TABS)[number]["key"]>("orders");
 
   const byType = ORDER_TYPES.map(t => ({
     type: t,
@@ -37,18 +41,44 @@ export function Reports({ orders, clients, staff }: ReportsProps) {
     efficiency: s.completed > 0 ? Math.round((s.completed / (s.completed + s.active)) * 100) : 0,
   }));
 
-  const tabs = [
-    { key: "orders", label: "Order-wise" },
-    { key: "clients", label: "Client-wise" },
-    { key: "staff", label: "Staff Productivity" },
-    { key: "monthly", label: "Monthly Trend" },
-  ];
+  function handleExport() {
+    if (reportType === "orders") {
+      downloadCsv("orders-report.csv", byType.map(r => ({
+        "Order Type": r.type, "Total Orders": r.count, Delivered: r.delivered,
+        "In Progress": r.count - r.delivered,
+        "Completion Rate %": r.count > 0 ? Math.round((r.delivered / r.count) * 100) : 0,
+      })));
+    } else if (reportType === "clients") {
+      downloadCsv("clients-report.csv", byClient.map(r => ({
+        Client: r.name, Organization: r.org, Type: r.type,
+        "Total Orders": r.orderCount, Delivered: r.delivered, Active: r.active,
+      })));
+    } else if (reportType === "staff") {
+      downloadCsv("staff-report.csv", byStaff.map(r => ({
+        Name: r.name, Role: r.role, "Active Tasks": r.active, Completed: r.completed, "Efficiency %": r.efficiency,
+      })));
+    } else {
+      downloadCsv("monthly-orders.csv", monthlyData.map(r => ({ Month: r.month, Orders: r.orders })));
+    }
+  }
 
   return (
     <div className="p-6">
-      <PageHeader title="Reports" subtitle="Operations analytics & performance" />
+      <PageHeader
+        title="Reports"
+        subtitle="Operations analytics & performance"
+        actions={
+          <button
+            type="button"
+            onClick={handleExport}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-foreground border border-border hover:bg-muted transition-colors cursor-pointer"
+          >
+            <Download size={13} /> Export CSV
+          </button>
+        }
+      />
       <div className="flex gap-2 mb-5 flex-wrap">
-        {tabs.map(t => <FilterPill key={t.key} label={t.label} active={reportType === t.key} onClick={() => setReportType(t.key)} />)}
+        {TABS.map(t => <FilterPill key={t.key} label={t.label} active={reportType === t.key} onClick={() => setReportType(t.key)} />)}
       </div>
 
       {reportType === "monthly" && (

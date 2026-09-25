@@ -1,4 +1,7 @@
-import type { Client, Order, OrderStatus, StaffMember } from "../types";
+import type { BusinessSettings, Client, Order, OrderStatus, StaffMember, Task } from "../types";
+
+/** The dashboard's fictional "today" — matches the seed data's timeline (see Dashboard's date chip). */
+export const CURRENT_DATE = "2026-06-23";
 
 export const monthlyData = [
   { month: "Jan", orders: 45 },
@@ -28,19 +31,24 @@ export const CLIENTS: Client[] = [
   { id: 8, name: "Vikram Singh", org: "VRS Corporate Solutions", type: "Corporate", mobile: "91098 76543", orders: 7, lastOrder: "2026-06-05", status: "Inactive" },
 ];
 
+/** Seed orders don't carry real status-history logs — backfill a single "Created" event. */
+function withSeedHistory(order: Omit<Order, "statusHistory">): Order {
+  return { ...order, statusHistory: [{ status: order.status, at: order.orderDate }] };
+}
+
 export const INITIAL_ORDERS: Order[] = [
-  { id: "PJE-089", clientId: 1, client: "St. Mary's High School", type: "School Books", qty: 500, dueDate: "2026-07-05", orderDate: "2026-06-10", status: "Printing", staff: "Mohan Kumar", paperType: "80 GSM Maplitho", size: "A4", colorMode: "Color", binding: "Perfect Binding", notes: "Include school logo on cover. Quality check required before binding.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-088", clientId: 2, client: "City General Hospital", type: "Hospital Forms", qty: 2000, dueDate: "2026-06-28", orderDate: "2026-06-08", status: "Printing", staff: "Mohan Kumar", paperType: "60 GSM NCR", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "NCR forms — 2-ply. Hospital header on all pages.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-087", clientId: 3, client: "Bright Future Coaching", type: "Question Papers", qty: 300, dueDate: "2026-06-25", orderDate: "2026-06-12", status: "Design", staff: "Priya Doshi", paperType: "70 GSM Offset", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "Confidential. Do not share soft copy outside.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-086", clientId: 7, client: "IAS Achievers Academy", type: "Answer Sheets", qty: 1000, dueDate: "2026-06-22", orderDate: "2026-05-30", status: "Delivered", staff: "Rahul Desai", paperType: "80 GSM Ruled", size: "A4", colorMode: "Black & White", binding: "Saddle Stitch", notes: "16-page booklet format.", deliveredTo: "Neha Gupta", deliveredMobile: "92109 87654", deliveredDate: "2026-06-21", deliveryNotes: "Delivered at academy reception. Signed by admin staff.", acknowledgementFile: "acknowledgement_PJE086.jpg" },
-  { id: "PJE-085", clientId: 8, client: "VRS Corporate Solutions", type: "Brochures", qty: 200, dueDate: "2026-06-30", orderDate: "2026-06-14", status: "Binding", staff: "Suresh Malhotra", paperType: "130 GSM Art", size: "A4 Tri-fold", colorMode: "Color", binding: "None", notes: "Use Pantone 286 blue for brand color. Matte lamination required.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-084", clientId: 5, client: "Sunshine Public School", type: "Notebooks", qty: 800, dueDate: "2026-07-10", orderDate: "2026-06-20", status: "New", staff: "—", paperType: "60 GSM Ruled", size: "A5", colorMode: "Color", binding: "Spiral", notes: "Student name field on cover. 100-page notebooks.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-083", clientId: 6, client: "Apollo Diagnostic Clinic", type: "Prescription Pads", qty: 500, dueDate: "2026-06-20", orderDate: "2026-06-05", status: "Overdue", staff: "Mohan Kumar", paperType: "70 GSM Offset", size: "A5", colorMode: "Black & White", binding: "Glue Pad", notes: "Doctor name and registration number to be printed.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-082", clientId: 4, client: "Government Degree College", type: "Certificates", qty: 150, dueDate: "2026-07-15", orderDate: "2026-06-18", status: "Ready", staff: "—", paperType: "200 GSM Art Board", size: "A4 Landscape", colorMode: "Color", binding: "None", notes: "Gold foil border. Principal signature space at bottom right.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-081", clientId: 3, client: "Bright Future Coaching", type: "Registers", qty: 400, dueDate: "2026-06-18", orderDate: "2026-06-01", status: "Overdue", staff: "Priya Doshi", paperType: "60 GSM Ruled", size: "A4", colorMode: "Black & White", binding: "Case Binding", notes: "Attendance register format. 200 pages.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-080", clientId: 1, client: "St. Mary's High School", type: "Banners", qty: 10, dueDate: "2026-07-08", orderDate: "2026-06-22", status: "New", staff: "—", paperType: "Flex Vinyl", size: "4ft × 2ft", colorMode: "Color", binding: "None", notes: "School annual day banners. Grommets on all 4 corners.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-079", clientId: 7, client: "IAS Achievers Academy", type: "Question Papers", qty: 600, dueDate: "2026-07-20", orderDate: "2026-06-21", status: "Design", staff: "Kaveri Nair", paperType: "70 GSM Offset", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "Series A and B both required. Different colored covers.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
-  { id: "PJE-078", clientId: 2, client: "City General Hospital", type: "Hospital Forms", qty: 5000, dueDate: "2026-07-25", orderDate: "2026-06-19", status: "Packing", staff: "Suresh Malhotra", paperType: "60 GSM NCR", size: "A5", colorMode: "Black & White", binding: "Glue Pad", notes: "OPD forms. Pack in sets of 100.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" },
+  withSeedHistory({ id: "PJE-089", clientId: 1, client: "St. Mary's High School", type: "School Books", qty: 500, dueDate: "2026-07-05", orderDate: "2026-06-10", status: "Printing", staff: "Mohan Kumar", paperType: "80 GSM Maplitho", size: "A4", colorMode: "Color", binding: "Perfect Binding", notes: "Include school logo on cover. Quality check required before binding.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-088", clientId: 2, client: "City General Hospital", type: "Hospital Forms", qty: 2000, dueDate: "2026-06-28", orderDate: "2026-06-08", status: "Printing", staff: "Mohan Kumar", paperType: "60 GSM NCR", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "NCR forms — 2-ply. Hospital header on all pages.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-087", clientId: 3, client: "Bright Future Coaching", type: "Question Papers", qty: 300, dueDate: "2026-06-25", orderDate: "2026-06-12", status: "Design", staff: "Priya Doshi", paperType: "70 GSM Offset", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "Confidential. Do not share soft copy outside.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-086", clientId: 7, client: "IAS Achievers Academy", type: "Answer Sheets", qty: 1000, dueDate: "2026-06-22", orderDate: "2026-05-30", status: "Delivered", staff: "Rahul Desai", paperType: "80 GSM Ruled", size: "A4", colorMode: "Black & White", binding: "Saddle Stitch", notes: "16-page booklet format.", deliveredTo: "Neha Gupta", deliveredMobile: "92109 87654", deliveredDate: "2026-06-21", deliveryNotes: "Delivered at academy reception. Signed by admin staff.", acknowledgementFile: "acknowledgement_PJE086.jpg" }),
+  withSeedHistory({ id: "PJE-085", clientId: 8, client: "VRS Corporate Solutions", type: "Brochures", qty: 200, dueDate: "2026-06-30", orderDate: "2026-06-14", status: "Binding", staff: "Suresh Malhotra", paperType: "130 GSM Art", size: "A4 Tri-fold", colorMode: "Color", binding: "None", notes: "Use Pantone 286 blue for brand color. Matte lamination required.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-084", clientId: 5, client: "Sunshine Public School", type: "Notebooks", qty: 800, dueDate: "2026-07-10", orderDate: "2026-06-20", status: "New", staff: "—", paperType: "60 GSM Ruled", size: "A5", colorMode: "Color", binding: "Spiral", notes: "Student name field on cover. 100-page notebooks.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-083", clientId: 6, client: "Apollo Diagnostic Clinic", type: "Prescription Pads", qty: 500, dueDate: "2026-06-20", orderDate: "2026-06-05", status: "Overdue", staff: "Mohan Kumar", paperType: "70 GSM Offset", size: "A5", colorMode: "Black & White", binding: "Glue Pad", notes: "Doctor name and registration number to be printed.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-082", clientId: 4, client: "Government Degree College", type: "Certificates", qty: 150, dueDate: "2026-07-15", orderDate: "2026-06-18", status: "Ready", staff: "—", paperType: "200 GSM Art Board", size: "A4 Landscape", colorMode: "Color", binding: "None", notes: "Gold foil border. Principal signature space at bottom right.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-081", clientId: 3, client: "Bright Future Coaching", type: "Registers", qty: 400, dueDate: "2026-06-18", orderDate: "2026-06-01", status: "Overdue", staff: "Priya Doshi", paperType: "60 GSM Ruled", size: "A4", colorMode: "Black & White", binding: "Case Binding", notes: "Attendance register format. 200 pages.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-080", clientId: 1, client: "St. Mary's High School", type: "Banners", qty: 10, dueDate: "2026-07-08", orderDate: "2026-06-22", status: "New", staff: "—", paperType: "Flex Vinyl", size: "4ft × 2ft", colorMode: "Color", binding: "None", notes: "School annual day banners. Grommets on all 4 corners.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-079", clientId: 7, client: "IAS Achievers Academy", type: "Question Papers", qty: 600, dueDate: "2026-07-20", orderDate: "2026-06-21", status: "Design", staff: "Kaveri Nair", paperType: "70 GSM Offset", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "Series A and B both required. Different colored covers.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-078", clientId: 2, client: "City General Hospital", type: "Hospital Forms", qty: 5000, dueDate: "2026-07-25", orderDate: "2026-06-19", status: "Packing", staff: "Suresh Malhotra", paperType: "60 GSM NCR", size: "A5", colorMode: "Black & White", binding: "Glue Pad", notes: "OPD forms. Pack in sets of 100.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
 ];
 
 export const STAFF_LIST: StaffMember[] = [
@@ -52,7 +60,7 @@ export const STAFF_LIST: StaffMember[] = [
   { id: 6, name: "Sanjay Patel", role: "Manager", active: 0, completed: 0, initials: "SP", color: "bg-slate-500" },
 ];
 
-export const TASKS = [
+export const TASKS: Task[] = [
   { id: 1, name: "Design cover & layout", order: "PJE-087", staffId: 1, priority: "High", due: "2026-06-24", status: "In Progress" },
   { id: 2, name: "Plate making & press setup", order: "PJE-089", staffId: 2, priority: "High", due: "2026-06-25", status: "In Progress" },
   { id: 3, name: "Binding & trimming", order: "PJE-085", staffId: 3, priority: "Medium", due: "2026-06-27", status: "Pending" },
@@ -61,6 +69,15 @@ export const TASKS = [
   { id: 6, name: "Delivery to IAS Academy", order: "PJE-086", staffId: 4, priority: "High", due: "2026-06-24", status: "Completed" },
   { id: 7, name: "Proof review — Hospital Forms", order: "PJE-088", staffId: 1, priority: "High", due: "2026-06-23", status: "In Progress" },
 ];
+
+export const DEFAULT_SETTINGS: BusinessSettings = {
+  businessName: "Pooja Enterprises",
+  owner: "Proprietor",
+  gstNumber: "27ABCDE1234F1Z5",
+  contactNumber: "+91 98765 43210",
+  cityState: "Pune, Maharashtra",
+  financialYear: "2026–27",
+};
 
 export const ORDER_TYPES = [
   "School Books", "Notebooks", "Registers", "Question Papers", "Answer Sheets",

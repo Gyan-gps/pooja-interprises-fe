@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Modal } from "../../components/common/Modal";
 import { Button } from "../../components/common/Button";
 import { SelectField, TextField } from "../../components/common/FormField";
+import { nextNumericId } from "../../lib/id";
+import { formatMobile, mobileNumber, required, uniqueBy } from "../../lib/validation";
 import type { Client, ClientType } from "../../types";
 
 const CLIENT_TYPES: ClientType[] = ["School", "Hospital", "Coaching", "College", "Corporate"];
@@ -24,19 +26,11 @@ const EMPTY_FORM: FormState = { name: "", org: "", type: "School", mobile: "" };
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
 function validate(form: FormState, existingClients: Client[]): FormErrors {
-  const errors: FormErrors = {};
-
-  if (!form.name.trim()) errors.name = "Contact name is required.";
-  if (!form.org.trim()) errors.org = "Organization is required.";
-  else if (existingClients.some(c => c.org.toLowerCase() === form.org.trim().toLowerCase())) {
-    errors.org = "A client with this organization already exists.";
-  }
-
-  const digits = form.mobile.replace(/\D/g, "");
-  if (!digits) errors.mobile = "Mobile number is required.";
-  else if (digits.length !== 10) errors.mobile = "Enter a 10-digit mobile number.";
-
-  return errors;
+  return {
+    name: required(form.name, "Contact name is required."),
+    org: required(form.org, "Organization is required.") ?? uniqueBy(form.org, existingClients, c => c.org, "A client with this organization already exists."),
+    mobile: mobileNumber(form.mobile),
+  };
 }
 
 export function AddClientModal({ existingClients, onClose, onCreate }: AddClientModalProps) {
@@ -50,18 +44,17 @@ export function AddClientModal({ existingClients, onClose, onCreate }: AddClient
 
   function handleSubmit() {
     const nextErrors = validate(form, existingClients);
-    if (Object.keys(nextErrors).length > 0) {
+    if (Object.values(nextErrors).some(Boolean)) {
       setErrors(nextErrors);
       return;
     }
 
-    const digits = form.mobile.replace(/\D/g, "");
     onCreate({
-      id: Math.max(0, ...existingClients.map(c => c.id)) + 1,
+      id: nextNumericId(existingClients),
       name: form.name.trim(),
       org: form.org.trim(),
       type: form.type,
-      mobile: `${digits.slice(0, 5)} ${digits.slice(5)}`,
+      mobile: formatMobile(form.mobile),
       orders: 0,
       lastOrder: "—",
       status: "Active",
