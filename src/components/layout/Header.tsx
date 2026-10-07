@@ -1,14 +1,11 @@
 import { ChevronRight, Bell, Menu } from "lucide-react";
-import { ZoomToggle } from "../accessibility/ZoomToggle";
 
 interface HeaderProps {
   sectionLabel: string;
   onMenuClick: () => void;
-  zoomEnabled: boolean;
-  onZoomChange: (enabled: boolean) => void;
 }
 
-export function Header({ sectionLabel, onMenuClick, zoomEnabled, onZoomChange }: HeaderProps) {
+export function Header({ sectionLabel, onMenuClick }: HeaderProps) {
   return (
     <header
       className="bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0"
@@ -30,7 +27,6 @@ export function Header({ sectionLabel, onMenuClick, zoomEnabled, onZoomChange }:
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <ZoomToggle enabled={zoomEnabled} onChange={onZoomChange} />
         <button
           type="button"
           aria-label="Notifications"

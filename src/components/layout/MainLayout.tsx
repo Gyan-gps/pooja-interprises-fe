@@ -8,7 +8,7 @@ import { useZoom } from "../../hooks/useZoom";
 export function MainLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
-  const { enabled: zoomEnabled, setEnabled: setZoomEnabled, containerRef } = useZoom();
+  const { containerRef } = useZoom();
 
   // Match "/orders/123" to the "/orders" nav item, not just an exact path.
   const activeNav = NAV_ITEMS.find(n =>
@@ -17,6 +17,7 @@ export function MainLayout() {
 
   return (
     <div
+      ref={containerRef}
       className="flex h-screen overflow-hidden"
       style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
@@ -26,12 +27,10 @@ export function MainLayout() {
         <Header
           sectionLabel={activeNav?.label ?? "Not Found"}
           onMenuClick={() => setMenuOpen(true)}
-          zoomEnabled={zoomEnabled}
-          onZoomChange={setZoomEnabled}
         />
         {/* The magnifier only ever tracks the cursor over routed page content — never this header or the sidebar. */}
         <main className="flex-1 overflow-y-auto">
-          <div ref={containerRef} className="min-h-full">
+          <div className="min-h-full">
             <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}>
               <Outlet />
             </Suspense>
