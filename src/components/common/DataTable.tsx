@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 
 export interface DataTableColumn<T> {
   key: string;
@@ -10,25 +10,52 @@ export interface DataTableColumn<T> {
   className?: string;
 }
 
-interface DataTableProps<T> {
+interface DataTableProps<T, C = never> {
   columns: DataTableColumn<T>[];
   rows: T[];
   rowKey: (row: T) => string | number;
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
   pageSize?: number;
+  /** Enables expandable rows: returns the child rows shown under a parent row. */
+  getChildren?: (row: T) => C[];
+  /** Renders the cells (<td>s) of one child row. */
+  renderChildRow?: (child: C, parent: T) => ReactNode;
+  childKey?: (child: C) => string | number;
+  /** Row keys that are expanded when the table first renders or when this set changes. */
+  defaultExpanded?: Set<string | number>;
 }
 
 const PAGE_SIZE_DEFAULT = 10;
 
-export function DataTable<T>({
+export function DataTable<T, C = never>({
   columns,
   rows,
   rowKey,
   onRowClick,
   emptyMessage = "No records found.",
   pageSize = PAGE_SIZE_DEFAULT,
-}: DataTableProps<T>) {
+  getChildren,
+  renderChildRow,
+  childKey,
+  defaultExpanded,
+}: DataTableProps<T, C>) {
+  const [expanded, setExpanded] = useState<Set<string | number>>(() => new Set(defaultExpanded));
+  const [lastDefault, setLastDefault] = useState(defaultExpanded);
+  if (defaultExpanded !== lastDefault) {
+    setLastDefault(defaultExpanded);
+    setExpanded(new Set(defaultExpanded));
+  }
+  const expandable = Boolean(getChildren && renderChildRow);
+
+  function toggleExpanded(key: string | number) {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(1);
 
@@ -64,6 +91,7 @@ export function DataTable<T>({
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-muted/30">
+              {expandable && <th className="w-8 px-2" aria-label="Expand" />}
               {columns.map(col => (
                 <th
                   key={col.key}
@@ -79,21 +107,49 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {pageRows.map(row => (
+            {pageRows.map(row => {
+              const key = rowKey(row);
+              const children = expandable ? getChildren!(row) : [];
+              const isOpen = expanded.has(key);
+              return (
+              <Fragment key={key}>
               <tr
-                key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
                 onKeyDown={onRowClick ? e => e.key === "Enter" && onRowClick(row) : undefined}
                 className={`border-b border-border last:border-0 hover:bg-muted/20 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
               >
+                {expandable && (
+                  <td className="w-8 px-2 py-3">
+                    {children.length > 0 && (
+                      <button
+                        type="button"
+                        aria-label={isOpen ? "Collapse" : "Expand"}
+                        aria-expanded={isOpen}
+                        onClick={e => { e.stopPropagation(); toggleExpanded(key); }}
+                        onKeyDown={e => e.stopPropagation()}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
+                      >
+                        {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </button>
+                    )}
+                  </td>
+                )}
                 {columns.map(col => (
                   <td key={col.key} className={`px-4 py-3 ${col.className ?? ""}`}>
                     {col.render(row)}
                   </td>
                 ))}
               </tr>
-            ))}
+              {isOpen && children.map((child, i) => (
+                <tr key={childKey ? childKey(child) : i} className="border-b border-border last:border-0 bg-muted/10">
+                  <td className="w-8 px-2" />
+                  {renderChildRow!(child, row)}
+                </tr>
+              ))}
+              </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

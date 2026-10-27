@@ -10,6 +10,13 @@ export type OrderStatus =
 
 export type ClientType = "School" | "Hospital" | "Coaching" | "College" | "Corporate";
 
+export interface Branch {
+  id: number;
+  name: string;
+  mobile: string;
+  address?: string;
+}
+
 export interface Client {
   id: number;
   name: string;
@@ -19,6 +26,7 @@ export interface Client {
   orders: number;
   lastOrder: string;
   status: "Active" | "Inactive";
+  branches?: Branch[];
 }
 
 export interface OrderStatusEvent {

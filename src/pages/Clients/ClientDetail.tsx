@@ -15,6 +15,7 @@ import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import type { Client, ClientType, Order } from "../../types";
+import { BranchFields, hasBranchErrors, toBranchDrafts, toBranches, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
 
 const CLIENT_TABS = ["overview", "orders", "notes"] as const;
 type ClientTab = (typeof CLIENT_TABS)[number];
@@ -68,6 +69,8 @@ export function ClientDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [editErrors, setEditErrors] = useState<Partial<Record<keyof EditForm, string>>>({});
+  const [editBranches, setEditBranches] = useState<BranchDraft[]>([]);
+  const [editBranchErrors, setEditBranchErrors] = useState<BranchErrors[]>([]);
   const [showDelete, setShowDelete] = useState(false);
 
   usePageTitle(client ? client.name : "Client not found");
@@ -110,6 +113,8 @@ export function ClientDetail() {
 
   function startEdit() {
     setEditForm({ name: client!.name, org: client!.org, mobile: client!.mobile, type: client!.type });
+    setEditBranches(toBranchDrafts(client!.branches));
+    setEditBranchErrors([]);
     setEditErrors({});
     setIsEditing(true);
   }
@@ -121,8 +126,10 @@ export function ClientDetail() {
       org: required(editForm.org, "Organization is required."),
       mobile: mobileNumber(editForm.mobile),
     };
-    if (nextErrors.name || nextErrors.org || nextErrors.mobile) {
+    const nextBranchErrors = validateBranches(editBranches);
+    if (nextErrors.name || nextErrors.org || nextErrors.mobile || hasBranchErrors(nextBranchErrors)) {
       setEditErrors(nextErrors);
+      setEditBranchErrors(nextBranchErrors);
       return;
     }
     await updateClient(client!.id, {
@@ -130,6 +137,7 @@ export function ClientDetail() {
       org: editForm.org.trim(),
       mobile: formatMobile(editForm.mobile),
       type: editForm.type,
+      branches: toBranches(editBranches),
     });
     setIsEditing(false);
     toast.show("Client updated.");
@@ -210,6 +218,16 @@ export function ClientDetail() {
               <TextField label="Mobile *" type="tel" value={editForm.mobile} onChange={v => { setEditForm(p => p && { ...p, mobile: v }); setEditErrors(p => ({ ...p, mobile: undefined })); }} error={editErrors.mobile} />
               <SelectField label="Client Type" value={editForm.type} options={CLIENT_TYPES} onChange={v => setEditForm(p => p && { ...p, type: v as ClientType })} />
             </div>
+            <div className="max-w-xl mt-5 pt-4 border-t border-border">
+              <BranchFields
+                branches={editBranches}
+                errors={editBranchErrors}
+                onChange={(next, changedIndex) => {
+                  setEditBranches(next);
+                  setEditBranchErrors(prev => (changedIndex === undefined ? [] : prev.map((e, i) => (i === changedIndex ? {} : e))));
+                }}
+              />
+            </div>
             <div className="flex gap-2 mt-5">
               <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
               <Button variant="primary" onClick={saveEdit}>Save Changes</Button>
@@ -264,6 +282,33 @@ export function ClientDetail() {
                         <div className="text-[10px] text-muted-foreground">{label}</div>
                       </div>
                     ))}
+                  </div>
+                  <div className="md:col-span-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                      Branches ({client.branches?.length ?? 0})
+                    </h4>
+                    {client.branches?.length ? (
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            {["Branch", "Mobile", "Address"].map(h => (
+                              <th key={h} className="pb-2.5 text-left text-xs text-muted-foreground font-bold">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {client.branches.map(b => (
+                            <tr key={b.id} className="border-b border-border last:border-0">
+                              <td className="py-2.5 font-medium">{b.name}</td>
+                              <td className="py-2.5 font-mono text-xs">{b.mobile}</td>
+                              <td className="py-2.5 text-xs text-muted-foreground">{b.address || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No branches. Use Edit to add one.</p>
+                    )}
                   </div>
                 </div>
               )}

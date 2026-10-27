@@ -5,6 +5,7 @@ import { SelectField, TextField } from "../../components/common/FormField";
 import { nextNumericId } from "../../lib/id";
 import { formatMobile, mobileNumber, required, uniqueBy } from "../../lib/validation";
 import type { Client, ClientType } from "../../types";
+import { BranchFields, hasBranchErrors, toBranches, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
 
 const CLIENT_TYPES: ClientType[] = ["School", "Hospital", "Coaching", "College", "Corporate"];
 
@@ -36,6 +37,13 @@ function validate(form: FormState, existingClients: Client[]): FormErrors {
 export function AddClientModal({ existingClients, onClose, onCreate }: AddClientModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [branches, setBranches] = useState<BranchDraft[]>([]);
+  const [branchErrors, setBranchErrors] = useState<BranchErrors[]>([]);
+
+  function updateBranches(next: BranchDraft[], changedIndex?: number) {
+    setBranches(next);
+    setBranchErrors(prev => (changedIndex === undefined ? [] : prev.map((e, i) => (i === changedIndex ? {} : e))));
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm(p => ({ ...p, [key]: value }));
@@ -44,8 +52,10 @@ export function AddClientModal({ existingClients, onClose, onCreate }: AddClient
 
   function handleSubmit() {
     const nextErrors = validate(form, existingClients);
-    if (Object.values(nextErrors).some(Boolean)) {
+    const nextBranchErrors = validateBranches(branches);
+    if (Object.values(nextErrors).some(Boolean) || hasBranchErrors(nextBranchErrors)) {
       setErrors(nextErrors);
+      setBranchErrors(nextBranchErrors);
       return;
     }
 
@@ -58,6 +68,7 @@ export function AddClientModal({ existingClients, onClose, onCreate }: AddClient
       orders: 0,
       lastOrder: "—",
       status: "Active",
+      branches: toBranches(branches),
     });
   }
 
@@ -106,6 +117,9 @@ export function AddClientModal({ existingClients, onClose, onCreate }: AddClient
           options={CLIENT_TYPES}
           onChange={v => update("type", v as ClientType)}
         />
+        <div className="col-span-2 pt-2 border-t border-border">
+          <BranchFields branches={branches} errors={branchErrors} onChange={updateBranches} />
+        </div>
       </div>
     </Modal>
   );

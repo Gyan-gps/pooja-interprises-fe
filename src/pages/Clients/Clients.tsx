@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { PageHeader } from "../../components/common/PageHeader";
@@ -12,7 +12,7 @@ import { useToast } from "../../lib/toast";
 import { useUrlState } from "../../hooks/useUrlState";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AddClientModal } from "./AddClientModal";
-import type { Client } from "../../types";
+import type { Branch, Client } from "../../types";
 
 const TYPE_FILTERS = ["All", "School", "Hospital", "Coaching", "College", "Corporate"];
 
@@ -26,11 +26,21 @@ export function Clients() {
   const [typeFilter, setTypeFilter] = useUrlState("type", "All");
   const [showAddClient, setShowAddClient] = useState(false);
 
+  const q = search.trim().toLowerCase();
+  const branchMatches = (c: Client) =>
+    Boolean(q) && (c.branches ?? []).some(b => b.name.toLowerCase().includes(q) || b.mobile.replace(/\s/g, "").includes(q.replace(/\s/g, "")));
+
   const filtered = clients.filter(c => {
     const ok = typeFilter === "All" || c.type === typeFilter;
-    const q = search.toLowerCase();
-    return ok && (c.name.toLowerCase().includes(q) || c.org.toLowerCase().includes(q));
+    return ok && (c.name.toLowerCase().includes(q) || c.org.toLowerCase().includes(q) || branchMatches(c));
   });
+
+  // Expand clients whose branches matched the search, so the matching branch is visible.
+  const expandedKey = filtered.filter(branchMatches).map(c => c.id).join(",");
+  const defaultExpanded = useMemo(
+    () => new Set<number>(expandedKey ? expandedKey.split(",").map(Number) : []),
+    [expandedKey]
+  );
 
   async function handleCreateClient(client: Client) {
     await createClient(client);
@@ -51,6 +61,7 @@ export function Clients() {
     { key: "org", header: "Organization", sortValue: c => c.org, render: c => <span className="text-sm text-muted-foreground">{c.org}</span> },
     { key: "type", header: "Type", render: c => <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[c.type]}`}>{c.type}</span> },
     { key: "mobile", header: "Mobile", render: c => <span className="font-mono text-xs text-foreground">{c.mobile}</span> },
+    { key: "branches", header: "Branches", sortValue: c => c.branches?.length ?? 0, render: c => <span className="text-sm text-center block text-muted-foreground">{c.branches?.length ?? 0}</span> },
     { key: "orders", header: "Orders", sortValue: c => c.orders, render: c => <span className="text-sm font-bold text-center block text-foreground">{c.orders}</span> },
     { key: "lastOrder", header: "Last Order", sortValue: c => c.lastOrder, render: c => <span className="font-mono text-xs text-muted-foreground">{c.lastOrder}</span> },
     { key: "status", header: "Status", render: c => <StatusBadge label={c.status} /> },
@@ -85,6 +96,20 @@ export function Clients() {
         rows={filtered}
         rowKey={c => c.id}
         onRowClick={c => navigate(`/clients/${c.id}`)}
+        getChildren={c => c.branches ?? []}
+        childKey={(b: Branch) => b.id}
+        renderChildRow={(b: Branch, c) => (
+          <>
+            <td className="px-4 py-2.5">
+              <span className="text-sm text-foreground pl-4">└ {b.name}</span>
+            </td>
+            <td className="px-4 py-2.5 text-xs text-muted-foreground">{c.org}</td>
+            <td className="px-4 py-2.5"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[c.type]}`}>Branch</span></td>
+            <td className="px-4 py-2.5 font-mono text-xs text-foreground">{b.mobile}</td>
+            <td colSpan={4} className="px-4 py-2.5 text-xs text-muted-foreground">{b.address || "—"}</td>
+          </>
+        )}
+        defaultExpanded={defaultExpanded}
         emptyMessage="No clients found."
       />
 

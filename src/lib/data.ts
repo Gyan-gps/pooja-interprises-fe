@@ -21,13 +21,13 @@ export const clientTypeDist = [
 ];
 
 export const CLIENTS: Client[] = [
-  { id: 1, name: "Rajesh Kumar", org: "St. Mary's High School", type: "School", mobile: "98765 43210", orders: 24, lastOrder: "2026-06-15", status: "Active" },
+  { id: 1, name: "Rajesh Kumar", org: "St. Mary's High School", type: "School", mobile: "98765 43210", orders: 24, lastOrder: "2026-06-15", status: "Active", branches: [{ id: 1, name: "Junior Wing", mobile: "98765 11111", address: "MG Road" }, { id: 2, name: "Senior Wing", mobile: "98765 22222", address: "Station Road" }] },
   { id: 2, name: "Dr. Priya Sharma", org: "City General Hospital", type: "Hospital", mobile: "97654 32109", orders: 18, lastOrder: "2026-06-20", status: "Active" },
   { id: 3, name: "Amit Patel", org: "Bright Future Coaching", type: "Coaching", mobile: "96543 21098", orders: 31, lastOrder: "2026-06-22", status: "Active" },
   { id: 4, name: "Prof. Kavita Rao", org: "Government Degree College", type: "College", mobile: "95432 10987", orders: 12, lastOrder: "2026-05-30", status: "Active" },
   { id: 5, name: "Sunil Mehta", org: "Sunshine Public School", type: "School", mobile: "94321 09876", orders: 19, lastOrder: "2026-06-18", status: "Active" },
   { id: 6, name: "Dr. Ramesh Joshi", org: "Apollo Diagnostic Clinic", type: "Hospital", mobile: "93210 98765", orders: 8, lastOrder: "2026-06-10", status: "Active" },
-  { id: 7, name: "Neha Gupta", org: "IAS Achievers Academy", type: "Coaching", mobile: "92109 87654", orders: 44, lastOrder: "2026-06-23", status: "Active" },
+  { id: 7, name: "Neha Gupta", org: "IAS Achievers Academy", type: "Coaching", mobile: "92109 87654", orders: 44, lastOrder: "2026-06-23", status: "Active", branches: [{ id: 1, name: "North Campus", mobile: "92109 33333" }] },
   { id: 8, name: "Vikram Singh", org: "VRS Corporate Solutions", type: "Corporate", mobile: "91098 76543", orders: 7, lastOrder: "2026-06-05", status: "Inactive" },
 ];
 
