@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Modal } from "../../components/common/Modal";
 import { Button } from "../../components/common/Button";
-import { SelectField, TextField } from "../../components/common/FormField";
+import { TextField } from "../../components/common/FormField";
+import { ComboBox } from "../../components/common/ComboBox";
+import { clientTypeOptions } from "../../lib/constants";
 import { nextNumericId } from "../../lib/id";
 import { formatMobile, mobileNumber, required, uniqueBy } from "../../lib/validation";
 import type { Client, ClientType } from "../../types";
 import { BranchFields, hasBranchErrors, toBranches, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
-
-const CLIENT_TYPES: ClientType[] = ["School", "Hospital", "Coaching", "College", "Corporate"];
 
 interface AddClientModalProps {
   existingClients: Client[];
@@ -111,11 +111,13 @@ export function AddClientModal({ existingClients, onClose, onCreate }: AddClient
           onChange={v => update("mobile", v)}
           error={errors.mobile}
         />
-        <SelectField
+        <ComboBox
           label="Client Type"
+          placeholder="Search or add type..."
           value={form.type}
-          options={CLIENT_TYPES}
-          onChange={v => update("type", v as ClientType)}
+          options={clientTypeOptions(existingClients, [form.type])}
+          onChange={v => update("type", v)}
+          onCreate={v => update("type", v.trim())}
         />
         <div className="col-span-2 pt-2 border-t border-border">
           <BranchFields branches={branches} errors={branchErrors} onChange={updateBranches} />

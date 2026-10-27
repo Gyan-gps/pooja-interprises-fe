@@ -62,3 +62,15 @@ export const KANBAN_COLORS: Record<string, string> = {
   Ready: "#10B981",
   Delivered: "#059669",
 };
+
+export const DEFAULT_CLIENT_TYPES = ["School", "Hospital", "Coaching", "College", "Corporate"];
+
+/** Badge classes for a client type, with a neutral fallback for user-added types. */
+export function typeCls(type: string): string {
+  return TYPE_CLS[type] ?? "bg-amber-50 text-amber-700";
+}
+
+/** Built-in client types plus any custom types already used by clients. */
+export function clientTypeOptions(clients: { type: string }[], extra: string[] = []) {
+  return Array.from(new Set([...DEFAULT_CLIENT_TYPES, ...clients.map(c => c.type), ...extra])).map(t => ({ value: t, label: t }));
+}

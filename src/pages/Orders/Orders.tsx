@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { PageHeader } from "../../components/common/PageHeader";
@@ -8,9 +8,10 @@ import { FilterPill } from "../../components/common/FilterPill";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { DataTable, type DataTableColumn } from "../../components/common/DataTable";
 import { SelectField, TextAreaField, TextField } from "../../components/common/FormField";
+import { ComboBox } from "../../components/common/ComboBox";
 import { CURRENT_DATE, ORDER_TYPES } from "../../lib/data";
 import { nextOrderId } from "../../lib/id";
-import { positiveInteger, required } from "../../lib/validation";
+import { formatMobile, positiveInteger, required } from "../../lib/validation";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -21,8 +22,9 @@ const STATUS_FILTERS = ["All", "New", "Design", "Printing", "Binding", "Packing"
 const COLOR_MODES = ["Color", "Black & White", "Spot Color"] as const;
 
 interface OrderFormState {
-  client: string;
-  org: string;
+  clientId: string;
+  branchId: string;
+  contactName: string;
   mobile: string;
   type: string;
   qty: string;
@@ -36,7 +38,7 @@ interface OrderFormState {
 }
 
 const EMPTY_FORM: OrderFormState = {
-  client: "", org: "", mobile: "",
+  clientId: "", branchId: "", contactName: "", mobile: "",
   type: ORDER_TYPES[0], qty: "",
   orderDate: CURRENT_DATE, dueDate: "",
   paperType: "", size: "", colorMode: "Color", binding: "", notes: "",
@@ -46,13 +48,13 @@ export function Orders() {
   usePageTitle("Orders");
   const navigate = useNavigate();
   const toast = useToast();
-  const { orders, createOrder } = useAppData();
+  const { orders, clients, createOrder } = useAppData();
 
   const [search, setSearch] = useUrlState("q", "");
   const [statusFilter, setStatusFilter] = useUrlState("status", "All");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<OrderFormState>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<Record<"client" | "qty", string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<"clientId" | "branchId" | "contactName" | "type" | "qty", string>>>({});
 
   const filtered = orders.filter(o => {
     const ok = statusFilter === "All" || o.status === statusFilter;
@@ -60,18 +62,58 @@ export function Orders() {
     return ok && (o.client.toLowerCase().includes(q) || o.id.toLowerCase().includes(q) || o.type.toLowerCase().includes(q));
   });
 
+  const selectedClient = clients.find(c => String(c.id) === form.clientId);
+  const branches = selectedClient?.branches ?? [];
+  const selectedBranch = branches.find(b => String(b.id) === form.branchId);
+
+  const clientOptions = useMemo(
+    () => clients.map(c => ({ value: String(c.id), label: c.org })).sort((a, b) => a.label.localeCompare(b.label)),
+    [clients]
+  );
+  // Built-in types plus any custom types used on earlier orders or added in this form.
+  const [addedTypes, setAddedTypes] = useState<string[]>([]);
+  const typeOptions = useMemo(
+    () => Array.from(new Set([...ORDER_TYPES, ...orders.map(o => o.type), ...addedTypes])).map(t => ({ value: t, label: t })),
+    [orders, addedTypes]
+  );
+
+  function selectClient(clientId: string) {
+    const c = clients.find(x => String(x.id) === clientId);
+    setForm(p => ({ ...p, clientId, branchId: "", contactName: c?.name ?? "", mobile: c?.mobile ?? "" }));
+    setErrors(p => ({ ...p, clientId: undefined, branchId: undefined, contactName: undefined }));
+  }
+
+  function selectBranch(branchId: string) {
+    const b = branches.find(x => String(x.id) === branchId);
+    // Branches have no contact person of their own, so keep the client's name and use the branch mobile.
+    setForm(p => ({ ...p, branchId, contactName: selectedClient?.name ?? p.contactName, mobile: b?.mobile ?? selectedClient?.mobile ?? "" }));
+    setErrors(p => ({ ...p, branchId: undefined }));
+  }
+
+  function addOrderType(label: string) {
+    setAddedTypes(p => [...p, label]);
+    setForm(p => ({ ...p, type: label }));
+    setErrors(p => ({ ...p, type: undefined }));
+  }
+
   async function handleCreate() {
     const nextErrors = {
-      client: required(form.client, "Client name is required."),
+      clientId: selectedClient ? undefined : "Select an organization.",
+      branchId: branches.length > 0 && !selectedBranch ? "Select a branch." : undefined,
+      contactName: required(form.contactName, "Contact name is required."),
+      type: required(form.type, "Order type is required."),
       qty: positiveInteger(form.qty),
     };
-    if (nextErrors.client || nextErrors.qty) {
+    if (Object.values(nextErrors).some(Boolean) || !selectedClient) {
       setErrors(nextErrors);
       return;
     }
 
     const order: Order = {
-      id: nextOrderId(orders), clientId: 0, client: form.org || form.client, type: form.type,
+      id: nextOrderId(orders), clientId: selectedClient.id, client: selectedClient.org,
+      ...(selectedBranch ? { branchId: selectedBranch.id, branch: selectedBranch.name } : {}),
+      contactName: form.contactName.trim(), contactMobile: form.mobile ? formatMobile(form.mobile) : "",
+      type: form.type.trim(),
       qty: Number(form.qty), dueDate: form.dueDate || "TBD", orderDate: form.orderDate,
       status: "New", staff: "—",
       paperType: form.paperType, size: form.size, colorMode: form.colorMode,
@@ -148,11 +190,21 @@ export function Orders() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Client Information</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <TextField label="Client Name *" placeholder="Contact person name" value={form.client} onChange={v => { setForm(p => ({ ...p, client: v })); setErrors(p => ({ ...p, client: undefined })); }} error={errors.client} />
+                <ComboBox label="Organization *" placeholder="Search organization..." value={form.clientId} options={clientOptions} onChange={selectClient} error={errors.clientId} />
               </div>
-              <div className="col-span-2">
-                <TextField label="Organization" placeholder="School / Hospital / Academy" value={form.org} onChange={v => setForm(p => ({ ...p, org: v }))} />
-              </div>
+              {branches.length > 0 && (
+                <div className="col-span-2">
+                  <ComboBox
+                    label="Branch *"
+                    placeholder="Search branch..."
+                    value={form.branchId}
+                    options={branches.map(b => ({ value: String(b.id), label: b.name }))}
+                    onChange={selectBranch}
+                    error={errors.branchId}
+                  />
+                </div>
+              )}
+              <TextField label="Contact Name *" placeholder="Contact person name" value={form.contactName} onChange={v => { setForm(p => ({ ...p, contactName: v })); setErrors(p => ({ ...p, contactName: undefined })); }} error={errors.contactName} />
               <TextField label="Mobile" type="tel" placeholder="98765 43210" value={form.mobile} onChange={v => setForm(p => ({ ...p, mobile: v }))} />
             </div>
           </div>
@@ -160,7 +212,15 @@ export function Orders() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Order & Print Specs</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <SelectField label="Order Type *" value={form.type} options={ORDER_TYPES} onChange={v => setForm(p => ({ ...p, type: v }))} />
+                <ComboBox
+                  label="Order Type *"
+                  placeholder="Search or add order type..."
+                  value={form.type}
+                  options={typeOptions}
+                  onChange={v => { setForm(p => ({ ...p, type: v })); setErrors(p => ({ ...p, type: undefined })); }}
+                  onCreate={addOrderType}
+                  error={errors.type}
+                />
               </div>
               <TextField label="Quantity *" type="number" placeholder="500" value={form.qty} onChange={v => { setForm(p => ({ ...p, qty: v })); setErrors(p => ({ ...p, qty: undefined })); }} error={errors.qty} />
               <SelectField label="Color Mode" value={form.colorMode} options={COLOR_MODES} onChange={v => setForm(p => ({ ...p, colorMode: v }))} />

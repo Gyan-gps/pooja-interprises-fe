@@ -6,15 +6,13 @@ import { Button } from "../../components/common/Button";
 import { FilterPill } from "../../components/common/FilterPill";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { DataTable, type DataTableColumn } from "../../components/common/DataTable";
-import { TYPE_CLS } from "../../lib/constants";
+import { clientTypeOptions, typeCls } from "../../lib/constants";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { useUrlState } from "../../hooks/useUrlState";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AddClientModal } from "./AddClientModal";
 import type { Branch, Client } from "../../types";
-
-const TYPE_FILTERS = ["All", "School", "Hospital", "Coaching", "College", "Corporate"];
 
 export function Clients() {
   usePageTitle("Clients");
@@ -59,7 +57,7 @@ export function Clients() {
       ),
     },
     { key: "org", header: "Organization", sortValue: c => c.org, render: c => <span className="text-sm text-muted-foreground">{c.org}</span> },
-    { key: "type", header: "Type", render: c => <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[c.type]}`}>{c.type}</span> },
+    { key: "type", header: "Type", render: c => <span className={`px-2 py-0.5 rounded text-xs font-semibold ${typeCls(c.type)}`}>{c.type}</span> },
     { key: "mobile", header: "Mobile", render: c => <span className="font-mono text-xs text-foreground">{c.mobile}</span> },
     { key: "branches", header: "Branches", sortValue: c => c.branches?.length ?? 0, render: c => <span className="text-sm text-center block text-muted-foreground">{c.branches?.length ?? 0}</span> },
     { key: "orders", header: "Orders", sortValue: c => c.orders, render: c => <span className="text-sm font-bold text-center block text-foreground">{c.orders}</span> },
@@ -87,7 +85,7 @@ export function Clients() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {TYPE_FILTERS.map(t => <FilterPill key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t)} />)}
+          {["All", ...clientTypeOptions(clients).map(o => o.value)].map(t => <FilterPill key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t)} />)}
         </div>
       </div>
 
@@ -104,7 +102,7 @@ export function Clients() {
               <span className="text-sm text-foreground pl-4">└ {b.name}</span>
             </td>
             <td className="px-4 py-2.5 text-xs text-muted-foreground">{c.org}</td>
-            <td className="px-4 py-2.5"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[c.type]}`}>Branch</span></td>
+            <td className="px-4 py-2.5"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${typeCls(c.type)}`}>Branch</span></td>
             <td className="px-4 py-2.5 font-mono text-xs text-foreground">{b.mobile}</td>
             <td colSpan={4} className="px-4 py-2.5 text-xs text-muted-foreground">{b.address || "—"}</td>
           </>

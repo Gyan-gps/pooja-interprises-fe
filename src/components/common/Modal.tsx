@@ -24,14 +24,25 @@ export function Modal({ title, subtitle, icon, size = "md", onClose, children, f
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Callers usually pass an inline onClose, which is a new function every render.
+  // Keep it in a ref so the effects below run once on open, not on every keystroke.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     }
     document.addEventListener("keydown", onKeyDown);
-    panelRef.current?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, []);
+
+  // Focus the first form field once when the modal opens.
+  useEffect(() => {
+    const panel = panelRef.current;
+    const field = panel?.querySelector<HTMLElement>("input, select, textarea") ?? panel?.querySelector<HTMLElement>("button");
+    field?.focus();
+  }, []);
 
   // Rendered via portal into <body> rather than in place: a page's content column
   // can be visually scaled (see the Zoom feature), and a `position: fixed` element

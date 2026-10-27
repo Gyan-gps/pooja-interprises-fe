@@ -6,7 +6,7 @@ import {
 import { PageHeader } from "../../components/common/PageHeader";
 import { FilterPill } from "../../components/common/FilterPill";
 import { ORDER_TYPES, monthlyData } from "../../lib/data";
-import { TYPE_CLS } from "../../lib/constants";
+import { typeCls } from "../../lib/constants";
 import { downloadCsv } from "../../lib/csv";
 import { useAppData } from "../../lib/appDataContext";
 import { usePageTitle } from "../../hooks/usePageTitle";
@@ -148,7 +148,7 @@ export function Reports() {
                       <div className="text-sm font-semibold text-foreground">{r.name}</div>
                       <div className="text-xs text-muted-foreground">{r.org}</div>
                     </td>
-                    <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[r.type]}`}>{r.type}</span></td>
+                    <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${typeCls(r.type)}`}>{r.type}</span></td>
                     <td className="px-4 py-3 text-sm font-bold text-foreground">{r.orderCount}</td>
                     <td className="px-4 py-3 text-sm font-bold text-emerald-600">{r.delivered}</td>
                     <td className="px-4 py-3 text-sm font-bold text-amber-600">{r.active}</td>

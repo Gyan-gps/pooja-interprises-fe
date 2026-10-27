@@ -8,7 +8,8 @@ export type OrderStatus =
   | "Delivered"
   | "Overdue";
 
-export type ClientType = "School" | "Hospital" | "Coaching" | "College" | "Corporate";
+/** Built-in types are "School" | "Hospital" | "Coaching" | "College" | "Corporate"; users can add their own. */
+export type ClientType = string;
 
 export interface Branch {
   id: number;
@@ -38,6 +39,10 @@ export interface Order {
   id: string;
   clientId: number;
   client: string;
+  branchId?: number;
+  branch?: string;
+  contactName?: string;
+  contactMobile?: string;
   type: string;
   qty: number;
   dueDate: string;

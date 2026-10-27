@@ -11,7 +11,7 @@ import { Modal } from "../../components/common/Modal";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { SelectField, TextAreaField, TextField } from "../../components/common/FormField";
 import { ORDER_TYPES, WORKFLOW_STEPS } from "../../lib/data";
-import { TYPE_CLS } from "../../lib/constants";
+import { typeCls } from "../../lib/constants";
 import { withStatusChange } from "../../lib/orderHistory";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
@@ -290,7 +290,7 @@ export function OrderDetail() {
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-start justify-between gap-4 text-sm">
                   <span className="text-muted-foreground shrink-0">{label}</span>
-                  <span className={`font-semibold text-foreground text-right ${label === "Client Type" && client ? `px-2 py-0.5 rounded text-xs ${TYPE_CLS[client.type]}` : ""}`}>
+                  <span className={`font-semibold text-foreground text-right ${label === "Client Type" && client ? `px-2 py-0.5 rounded text-xs ${typeCls(client.type)}` : ""}`}>
                     {value}
                   </span>
                 </div>

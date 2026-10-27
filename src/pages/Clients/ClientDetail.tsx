@@ -7,22 +7,22 @@ import { ConfirmDialog } from "../../components/common/ConfirmDialog";
 import { FilterPill } from "../../components/common/FilterPill";
 import { StatusBadge } from "../../components/common/StatusBadge";
 import { SelectField, TextAreaField, TextField } from "../../components/common/FormField";
+import { ComboBox } from "../../components/common/ComboBox";
 import { CURRENT_DATE, ORDER_TYPES } from "../../lib/data";
-import { TYPE_CLS } from "../../lib/constants";
+import { clientTypeOptions, typeCls } from "../../lib/constants";
 import { nextOrderId } from "../../lib/id";
 import { formatMobile, mobileNumber, required } from "../../lib/validation";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import type { Client, ClientType, Order } from "../../types";
+import type { ClientType, Order } from "../../types";
 import { BranchFields, hasBranchErrors, toBranchDrafts, toBranches, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
 
 const CLIENT_TABS = ["overview", "orders", "notes"] as const;
 type ClientTab = (typeof CLIENT_TABS)[number];
-const CLIENT_TYPES: ClientType[] = ["School", "Hospital", "Coaching", "College", "Corporate"];
 const COLOR_MODES = ["Color", "Black & White", "Spot Color"] as const;
 
-const CLIENT_NOTES: Record<Client["type"], string> = {
+const CLIENT_NOTES: Record<string, string> = {
   School: "Prefers delivery before exam season. Quality paper (80 GSM) required for all books. Always include a delivery challan.",
   Hospital: "Requires NCR (carbon copy) forms. Strict deadline compliance. Medical content must be proof-read by client before printing.",
   Coaching: "Bulk orders preferred. Quick turnaround needed especially before scheduled test dates. Confirm quantities 48 hrs before print start.",
@@ -168,7 +168,7 @@ export function ClientDetail() {
               <h2 className="font-bold text-foreground text-base">{client.name}</h2>
               <p className="text-sm text-muted-foreground">{client.org}</p>
               <div className="flex items-center gap-2 mt-1.5">
-                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[client.type]}`}>{client.type}</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${typeCls(client.type)}`}>{client.type}</span>
                 <StatusBadge label={client.status} />
               </div>
             </div>
@@ -216,7 +216,7 @@ export function ClientDetail() {
               <TextField label="Contact Person *" value={editForm.name} onChange={v => { setEditForm(p => p && { ...p, name: v }); setEditErrors(p => ({ ...p, name: undefined })); }} error={editErrors.name} />
               <TextField label="Organization *" value={editForm.org} onChange={v => { setEditForm(p => p && { ...p, org: v }); setEditErrors(p => ({ ...p, org: undefined })); }} error={editErrors.org} />
               <TextField label="Mobile *" type="tel" value={editForm.mobile} onChange={v => { setEditForm(p => p && { ...p, mobile: v }); setEditErrors(p => ({ ...p, mobile: undefined })); }} error={editErrors.mobile} />
-              <SelectField label="Client Type" value={editForm.type} options={CLIENT_TYPES} onChange={v => setEditForm(p => p && { ...p, type: v as ClientType })} />
+              <ComboBox label="Client Type" placeholder="Search or add type..." value={editForm.type} options={clientTypeOptions(clients, [editForm.type])} onChange={v => setEditForm(p => p && { ...p, type: v })} onCreate={v => setEditForm(p => p && { ...p, type: v.trim() })} />
             </div>
             <div className="max-w-xl mt-5 pt-4 border-t border-border">
               <BranchFields
@@ -378,7 +378,7 @@ export function ClientDetail() {
                 <div>
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Special Instructions</h4>
                   <div className="bg-muted/40 rounded-xl p-4 text-sm text-muted-foreground leading-relaxed">
-                    {CLIENT_NOTES[client.type]}
+                    {CLIENT_NOTES[client.type] ?? "No special instructions for this client type."}
                   </div>
                 </div>
               )}
@@ -405,7 +405,7 @@ export function ClientDetail() {
               <div className="text-sm font-bold text-foreground">{client.name}</div>
               <div className="text-xs text-muted-foreground">{client.org} · {client.mobile}</div>
             </div>
-            <span className={`ml-auto px-2 py-0.5 rounded text-xs font-semibold ${TYPE_CLS[client.type]}`}>{client.type}</span>
+            <span className={`ml-auto px-2 py-0.5 rounded text-xs font-semibold ${typeCls(client.type)}`}>{client.type}</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
