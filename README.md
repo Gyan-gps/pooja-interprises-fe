@@ -58,6 +58,18 @@ src/
 `vercel.json` sets the framework to Next.js. Set **Root Directory** to
 `pooja-interprises-fe` if this app lives in a monorepo subfolder.
 
+**Important after the Vite → Next.js migration:** in the Vercel project
+(Settings → General → Build & Development Settings), clear any leftover
+Vite overrides:
+
+- **Framework Preset:** Next.js
+- **Build Command:** `npm run build` (or leave default)
+- **Output Directory:** leave **empty** (do not use `dist` — that was Vite)
+- **Install Command:** `npm install` (or leave default)
+
+Next.js on Vercel uses `.next` internally; setting Output Directory to `dist`
+causes `NEXT_OUTPUT_DIR_MISSING`.
+
 ```bash
 npx vercel          # preview
 npx vercel --prod   # production
