@@ -6,6 +6,7 @@ import { clientsRepository } from "./repositories/clientsRepository";
 import { staffRepository } from "./repositories/staffRepository";
 import { tasksRepository } from "./repositories/tasksRepository";
 import { settingsRepository } from "./repositories/settingsRepository";
+import { migrateOrder } from "./orderHistory";
 import type { BusinessSettings, Client, Order, StaffMember, Task } from "../types";
 
 interface AppDataContextValue {
@@ -66,9 +67,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       staffRepository.list(),
       tasksRepository.list(),
       settingsRepository.get(),
-    ]).then(([o, c, s, t, st]) => {
+    ]).then(async ([o, c, s, t, st]) => {
       if (!mounted.current) return;
-      setOrders(o);
+      const migrated = o.map(migrateOrder);
+      // Persist Packing → Ready (etc.) so localStorage matches the current workflow.
+      await Promise.all(
+        migrated
+          .filter((order, i) => order.status !== o[i].status)
+          .map(order => ordersRepository.update(order.id, { status: order.status }))
+      );
+      if (!mounted.current) return;
+      setOrders(migrated);
       setClients(c);
       setStaff(s);
       setTasks(t);

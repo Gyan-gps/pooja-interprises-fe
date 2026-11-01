@@ -48,7 +48,7 @@ export const INITIAL_ORDERS: Order[] = [
   withSeedHistory({ id: "PJE-081", clientId: 3, client: "Bright Future Coaching", type: "Registers", qty: 400, dueDate: "2026-06-18", orderDate: "2026-06-01", status: "Overdue", staff: "Priya Doshi", paperType: "60 GSM Ruled", size: "A4", colorMode: "Black & White", binding: "Case Binding", notes: "Attendance register format. 200 pages.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
   withSeedHistory({ id: "PJE-080", clientId: 1, client: "St. Mary's High School", type: "Banners", qty: 10, dueDate: "2026-07-08", orderDate: "2026-06-22", status: "New", staff: "—", paperType: "Flex Vinyl", size: "4ft × 2ft", colorMode: "Color", binding: "None", notes: "School annual day banners. Grommets on all 4 corners.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
   withSeedHistory({ id: "PJE-079", clientId: 7, client: "IAS Achievers Academy", type: "Question Papers", qty: 600, dueDate: "2026-07-20", orderDate: "2026-06-21", status: "Design", staff: "Kaveri Nair", paperType: "70 GSM Offset", size: "A4", colorMode: "Black & White", binding: "Staple", notes: "Series A and B both required. Different colored covers.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
-  withSeedHistory({ id: "PJE-078", clientId: 2, client: "City General Hospital", type: "Hospital Forms", qty: 5000, dueDate: "2026-07-25", orderDate: "2026-06-19", status: "Packing", staff: "Suresh Malhotra", paperType: "60 GSM NCR", size: "A5", colorMode: "Black & White", binding: "Glue Pad", notes: "OPD forms. Pack in sets of 100.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "" }),
+  withSeedHistory({ id: "PJE-078", clientId: 2, client: "City General Hospital", type: "Hospital Forms", qty: 5000, dueDate: "2026-07-25", orderDate: "2026-06-19", status: "Ready", staff: "Suresh Malhotra", paperType: "60 GSM NCR", size: "A5", colorMode: "Black & White", binding: "Glue Pad", notes: "OPD forms. Pack in sets of 100.", deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "", readyCount: 5000 }),
 ];
 
 export const STAFF_LIST: StaffMember[] = [
@@ -85,6 +85,22 @@ export const ORDER_TYPES = [
   "Brochures", "Visiting Cards", "Custom Print",
 ];
 
-export const KANBAN_COLS: OrderStatus[] = ["New", "Design", "Printing", "Binding", "Packing", "Ready", "Delivered"];
+export const KANBAN_COLS: OrderStatus[] = [
+  "New",
+  "Design",
+  "Printing",
+  "Binding",
+  "Ready",
+  "Delivered",
+  "Pending for Bill",
+];
 
-export const WORKFLOW_STEPS: OrderStatus[] = ["New", "Design", "Printing", "Binding", "Packing", "Ready", "Delivered"];
+export const WORKFLOW_STEPS: OrderStatus[] = [
+  "New",
+  "Design",
+  "Printing",
+  "Binding",
+  "Ready",
+  "Delivered",
+  "Pending for Bill",
+];

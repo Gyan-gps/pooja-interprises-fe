@@ -31,10 +31,11 @@ export const STATUS_CLS: Record<string, string> = {
   Design: "bg-blue-50 text-blue-700",
   Printing: "bg-orange-50 text-orange-700",
   Binding: "bg-purple-50 text-purple-700",
-  Packing: "bg-yellow-50 text-yellow-700",
   Ready: "bg-emerald-50 text-emerald-700",
   Delivered: "bg-green-50 text-green-700",
+  "Pending for Bill": "bg-teal-50 text-teal-700",
   Overdue: "bg-red-50 text-red-700",
+  Packing: "bg-yellow-50 text-yellow-700",
   "In Progress": "bg-blue-50 text-blue-700",
   Pending: "bg-yellow-50 text-yellow-700",
   Completed: "bg-green-50 text-green-700",
@@ -58,9 +59,9 @@ export const KANBAN_COLORS: Record<string, string> = {
   Design: "#3B82F6",
   Printing: "#E84C1E",
   Binding: "#8B5CF6",
-  Packing: "#F59E0B",
   Ready: "#10B981",
   Delivered: "#059669",
+  "Pending for Bill": "#0D9488",
 };
 
 export const DEFAULT_CLIENT_TYPES = ["School", "Hospital", "Coaching", "College", "Corporate"];

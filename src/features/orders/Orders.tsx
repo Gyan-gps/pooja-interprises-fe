@@ -20,7 +20,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import type { Order } from "../../types";
 
-const STATUS_FILTERS = ["All", "New", "Design", "Printing", "Binding", "Packing", "Ready", "Delivered", "Overdue"];
+const STATUS_FILTERS = ["All", "New", "Design", "Printing", "Binding", "Ready", "Delivered", "Pending for Bill", "Overdue"];
 const COLOR_MODES = ["Color", "Black & White", "Spot Color"] as const;
 
 interface OrderFormState {

@@ -3,9 +3,9 @@ export type OrderStatus =
   | "Design"
   | "Printing"
   | "Binding"
-  | "Packing"
   | "Ready"
   | "Delivered"
+  | "Pending for Bill"
   | "Overdue";
 
 /** Built-in types are "School" | "Hospital" | "Coaching" | "College" | "Corporate"; users can add their own. */
@@ -60,6 +60,8 @@ export interface Order {
   deliveryNotes: string;
   acknowledgementFile: string;
   statusHistory: OrderStatusEvent[];
+  /** Pieces confirmed when moving Binding → Ready. */
+  readyCount?: number;
 }
 
 export type StaffRole =
