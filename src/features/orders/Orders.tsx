@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { ChevronDown, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
@@ -20,7 +20,17 @@ import { useUrlState } from "../../hooks/useUrlState";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import type { Order } from "../../types";
 
-const STATUS_FILTERS = ["All", "New", "Design", "Printing", "Binding", "Ready", "Delivered", "Pending for Bill", "Overdue"];
+const STATUS_FILTERS: { label: string; value: string }[] = [
+  { label: "All", value: "All" },
+  { label: "New", value: "New" },
+  { label: "Design", value: "Design" },
+  { label: "Printing", value: "Printing" },
+  { label: "Binding", value: "Binding" },
+  { label: "Ready", value: "Ready" },
+  { label: "Delivered", value: "Delivered" },
+  { label: "Bill Pending", value: "Pending for Bill" },
+  { label: "Overdue", value: "Overdue" },
+];
 const COLOR_MODES = ["Color", "Black & White", "Spot Color"] as const;
 
 interface OrderFormState {
@@ -50,18 +60,50 @@ export function Orders() {
   usePageTitle("Orders");
   const router = useRouter();
   const toast = useToast();
-  const { orders, clients, createOrder } = useAppData();
+  const { orders, clients, staff, createOrder } = useAppData();
 
   const [search, setSearch] = useUrlState("q", "");
   const [statusFilter, setStatusFilter] = useUrlState("status", "All");
+  const [advClient, setAdvClient] = useUrlState("client", "");
+  const [advType, setAdvType] = useUrlState("otype", "");
+  const [advStaff, setAdvStaff] = useUrlState("staff", "");
+  const [advPaper, setAdvPaper] = useUrlState("paper", "");
+  const [advColor, setAdvColor] = useUrlState("color", "");
+  const [orderFrom, setOrderFrom] = useUrlState("orderFrom", "");
+  const [orderTo, setOrderTo] = useUrlState("orderTo", "");
+  const [dueFrom, setDueFrom] = useUrlState("dueFrom", "");
+  const [dueTo, setDueTo] = useUrlState("dueTo", "");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<OrderFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<"clientId" | "branchId" | "contactName" | "type" | "qty", string>>>({});
 
+  const advancedActive = Boolean(
+    advClient || advType || advStaff || advPaper || advColor || orderFrom || orderTo || dueFrom || dueTo
+  );
+
   const filtered = orders.filter(o => {
-    const ok = statusFilter === "All" || o.status === statusFilter;
-    const q = search.toLowerCase();
-    return ok && (o.client.toLowerCase().includes(q) || o.id.toLowerCase().includes(q) || o.type.toLowerCase().includes(q));
+    if (statusFilter !== "All" && o.status !== statusFilter) return false;
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      const haystack = [o.id, o.client, o.type, o.staff, o.paperType, o.size, o.branch ?? "", o.contactName ?? ""]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+
+    if (advClient && o.clientId !== Number(advClient)) return false;
+    if (advType && o.type !== advType) return false;
+    if (advStaff && o.staff !== advStaff) return false;
+    if (advPaper && !o.paperType.toLowerCase().includes(advPaper.toLowerCase())) return false;
+    if (advColor && o.colorMode !== advColor) return false;
+    if (orderFrom && o.orderDate < orderFrom) return false;
+    if (orderTo && o.orderDate > orderTo) return false;
+    if (dueFrom && (o.dueDate === "TBD" || o.dueDate < dueFrom)) return false;
+    if (dueTo && (o.dueDate === "TBD" || o.dueDate > dueTo)) return false;
+
+    return true;
   });
 
   const selectedClient = clients.find(c => String(c.id) === form.clientId);
@@ -78,6 +120,26 @@ export function Orders() {
     () => Array.from(new Set([...ORDER_TYPES, ...orders.map(o => o.type), ...addedTypes])).map(t => ({ value: t, label: t })),
     [orders, addedTypes]
   );
+  const filterTypeOptions = useMemo(
+    () => Array.from(new Set([...ORDER_TYPES, ...orders.map(o => o.type)])).sort().map(t => ({ value: t, label: t })),
+    [orders]
+  );
+  const staffOptions = useMemo(
+    () => staff.map(s => ({ value: s.name, label: s.name })).sort((a, b) => a.label.localeCompare(b.label)),
+    [staff]
+  );
+
+  function clearAdvanced() {
+    setAdvClient("");
+    setAdvType("");
+    setAdvStaff("");
+    setAdvPaper("");
+    setAdvColor("");
+    setOrderFrom("");
+    setOrderTo("");
+    setDueFrom("");
+    setDueTo("");
+  }
 
   function selectClient(clientId: string) {
     const c = clients.find(x => String(x.id) === clientId);
@@ -146,25 +208,92 @@ export function Orders() {
     <div className="p-6">
       <PageHeader
         title="Orders"
-        subtitle={`${orders.length} total orders`}
+        subtitle={`${filtered.length} of ${orders.length} orders`}
         actions={<Button variant="primary" onClick={() => setShowCreate(true)}><Plus size={14} /> Create Order</Button>}
       />
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-3">
         <div className="relative flex-1 min-w-[220px] max-w-[320px]">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <label htmlFor="order-search" className="sr-only">Search orders</label>
           <input
             id="order-search"
             className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-ring/30"
-            placeholder="Search client, ID or type..."
+            placeholder="Search ID, client, type, staff..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {STATUS_FILTERS.map(s => <FilterPill key={s} label={s} active={statusFilter === s} onClick={() => setStatusFilter(s)} />)}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(v => !v)}
+          className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+            showAdvanced || advancedActive
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-white text-muted-foreground border-border hover:bg-muted"
+          }`}
+          aria-expanded={showAdvanced}
+        >
+          <SlidersHorizontal size={13} />
+          Advanced
+          <ChevronDown size={13} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+        </button>
+        {advancedActive && (
+          <button
+            type="button"
+            onClick={clearAdvanced}
+            className="inline-flex items-center gap-1 px-2.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <X size={12} /> Clear advanced
+          </button>
+        )}
+      </div>
+
+      {showAdvanced && (
+        <div className="mb-4 rounded-xl border border-border bg-card p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <SelectField
+              label="Client"
+              value={advClient}
+              options={[{ value: "", label: "Any client" }, ...clientOptions]}
+              onChange={setAdvClient}
+            />
+            <SelectField
+              label="Order type"
+              value={advType}
+              options={[{ value: "", label: "Any type" }, ...filterTypeOptions]}
+              onChange={setAdvType}
+            />
+            <SelectField
+              label="Staff"
+              value={advStaff}
+              options={[{ value: "", label: "Any staff" }, ...staffOptions]}
+              onChange={setAdvStaff}
+            />
+            <SelectField
+              label="Color mode"
+              value={advColor}
+              options={[{ value: "", label: "Any color" }, ...COLOR_MODES.map(c => ({ value: c, label: c }))]}
+              onChange={setAdvColor}
+            />
+            <TextField label="Paper type contains" value={advPaper} onChange={setAdvPaper} placeholder="e.g. Maplitho" />
+            <TextField label="Order date from" type="date" value={orderFrom} onChange={setOrderFrom} />
+            <TextField label="Order date to" type="date" value={orderTo} onChange={setOrderTo} />
+            <TextField label="Due date from" type="date" value={dueFrom} onChange={setDueFrom} />
+            <TextField label="Due date to" type="date" value={dueTo} onChange={setDueTo} />
+          </div>
         </div>
+      )}
+
+      <div className="flex gap-2 flex-wrap mb-4">
+        {STATUS_FILTERS.map(s => (
+          <FilterPill
+            key={s.value}
+            label={s.label}
+            active={statusFilter === s.value}
+            onClick={() => setStatusFilter(s.value)}
+          />
+        ))}
       </div>
 
       <DataTable
