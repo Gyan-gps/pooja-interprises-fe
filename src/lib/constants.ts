@@ -17,13 +17,13 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", path: "/", icon: LayoutDashboard },
-  { id: "clients", label: "Clients", path: "/clients", icon: Users },
-  { id: "orders", label: "Orders", path: "/orders", icon: Package },
-  { id: "production", label: "Production", path: "/production", icon: Layers },
-  { id: "staff", label: "Staff", path: "/staff", icon: UserCheck },
-  { id: "reports", label: "Reports", path: "/reports", icon: BarChart2 },
-  { id: "settings", label: "Settings", path: "/settings", icon: Settings },
+  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { id: "clients", label: "Clients", path: "/dashboard/clients", icon: Users },
+  { id: "orders", label: "Orders", path: "/dashboard/orders", icon: Package },
+  { id: "production", label: "Production", path: "/dashboard/production", icon: Layers },
+  { id: "staff", label: "Staff", path: "/dashboard/staff", icon: UserCheck },
+  { id: "reports", label: "Reports", path: "/dashboard/reports", icon: BarChart2 },
+  { id: "settings", label: "Settings", path: "/dashboard/settings", icon: Settings },
 ];
 
 export const STATUS_CLS: Record<string, string> = {

@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ordersRepository } from "./repositories/ordersRepository";
 import { clientsRepository } from "./repositories/clientsRepository";
