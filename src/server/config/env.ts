@@ -1,0 +1,41 @@
+import "server-only";
+
+import { z } from "zod";
+
+const serverEnvironmentSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NEXT_MONGODB_URL: z
+    .string()
+    .trim()
+    .min(1, "NEXT_MONGODB_URL is required"),
+});
+
+export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
+
+let cachedServerEnvironment: ServerEnvironment | undefined;
+
+/**
+ * Lazily validates and returns server environment variables.
+ * Does not connect to any external service.
+ */
+export function getServerEnvironment(): ServerEnvironment {
+  if (cachedServerEnvironment) {
+    return cachedServerEnvironment;
+  }
+
+  const parsedEnvironment = serverEnvironmentSchema.safeParse({
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_MONGODB_URL: process.env.NEXT_MONGODB_URL,
+  });
+
+  if (!parsedEnvironment.success) {
+    const issueSummary = parsedEnvironment.error.issues
+      .map((issue) => `${issue.path.join(".") || "env"}: ${issue.message}`)
+      .join("; ");
+
+    throw new Error(`Invalid server environment: ${issueSummary}`);
+  }
+
+  cachedServerEnvironment = parsedEnvironment.data;
+  return cachedServerEnvironment;
+}
