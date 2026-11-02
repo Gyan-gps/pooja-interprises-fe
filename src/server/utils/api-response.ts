@@ -3,6 +3,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ApiError } from "@/server/errors/api-error";
+import { logServerError } from "@/server/utils/logger";
 
 export interface ApiSuccessBody<T> {
   success: true;
@@ -76,9 +77,7 @@ export function handleApiError(error: unknown): NextResponse<ApiErrorBody> {
     );
   }
 
-  const safeMessage =
-    error instanceof Error ? error.message : "Unknown error";
-  console.error("Unhandled API error:", safeMessage);
+  logServerError("Unhandled API error:", error);
 
   return createErrorResponse(
     {

@@ -90,7 +90,6 @@ export function useZoom(options?: UseZoomOptions): UseZoomResult {
         setEnabled(false);
         return;
       }
-      console.log(e.code, e.key, e.ctrlKey, e.shiftKey, e.altKey, e.metaKey);
       // e.code (not e.key) so it works on any keyboard layout.
       if (!e.ctrlKey || e.shiftKey || e.altKey || e.metaKey || e.code !== "Space") return;
       // Leave Ctrl+Shift+Z alone inside fields, where it means "redo".

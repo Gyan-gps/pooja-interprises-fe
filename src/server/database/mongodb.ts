@@ -2,6 +2,7 @@ import "server-only";
 
 import mongoose from "mongoose";
 import { getServerEnvironment } from "@/server/config/env";
+import { logServerError } from "@/server/utils/logger";
 
 interface MongooseConnectionCache {
   connection: typeof mongoose | null;
@@ -81,15 +82,7 @@ export async function getDatabaseHealth(): Promise<DatabaseHealth> {
       latencyMilliseconds: Date.now() - startedAt,
     };
   } catch (healthCheckError) {
-    const safeMessage =
-      healthCheckError instanceof Error
-        ? healthCheckError.message.replace(
-            /mongodb(\+srv)?:\/\/[^\s@]+@/gi,
-            "mongodb$1://***@"
-          )
-        : "Unknown database health error";
-
-    console.error("Database health check failed:", safeMessage);
+    logServerError("Database health check failed:", healthCheckError);
 
     return {
       status: "unavailable",

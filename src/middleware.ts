@@ -3,6 +3,7 @@ import {
   SESSION_COOKIE_NAME,
   verifySessionJwtInEdge,
 } from "@/lib/auth/session-cookie";
+import { applySecurityHeaders } from "@/lib/security-headers";
 
 const PUBLIC_PAGE_PATHS = new Set(["/login"]);
 const PUBLIC_API_PATHS = new Set([
@@ -40,12 +41,14 @@ export async function middleware(request: NextRequest) {
       if (sessionToken && authSecret) {
         const payload = await verifySessionJwtInEdge(sessionToken, authSecret);
         if (payload) {
-          return NextResponse.redirect(new URL("/dashboard", request.url));
+          return withSecurityHeaders(
+            NextResponse.redirect(new URL("/dashboard", request.url))
+          );
         }
       }
     }
 
-    return NextResponse.next();
+    return withSecurityHeaders(NextResponse.next());
   }
 
   const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -60,20 +63,27 @@ export async function middleware(request: NextRequest) {
     return redirectToLogin(request, pathname);
   }
 
-  return NextResponse.next();
+  return withSecurityHeaders(NextResponse.next());
+}
+
+function withSecurityHeaders(response: NextResponse): NextResponse {
+  applySecurityHeaders(response.headers);
+  return response;
 }
 
 function redirectToLogin(request: NextRequest, pathname: string) {
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "UNAUTHENTICATED",
-          message: "Authentication required.",
+    return withSecurityHeaders(
+      NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "UNAUTHENTICATED",
+            message: "Authentication required.",
+          },
         },
-      },
-      { status: 401 }
+        { status: 401 }
+      )
     );
   }
 
@@ -81,7 +91,7 @@ function redirectToLogin(request: NextRequest, pathname: string) {
   if (pathname !== "/") {
     loginUrl.searchParams.set("next", pathname);
   }
-  return NextResponse.redirect(loginUrl);
+  return withSecurityHeaders(NextResponse.redirect(loginUrl));
 }
 
 export const config = {

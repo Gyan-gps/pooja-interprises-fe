@@ -2,7 +2,13 @@ import "server-only";
 
 import { connectToDatabase } from "@/server/database/mongodb";
 import { Counter } from "@/server/models/counter";
+import {
+  formatInvoiceNumber,
+  formatOrderNumber,
+} from "@/server/utils/document-numbers";
 import { withMongoErrorMapping } from "@/server/utils/mongo-error";
+
+export { formatInvoiceNumber, formatOrderNumber };
 
 export async function getNextSequenceValue(
   sequenceKey: string
@@ -26,14 +32,6 @@ export async function getNextSequenceValue(
 
     return counter.sequence;
   });
-}
-
-export function formatOrderNumber(year: number, sequence: number): string {
-  return `PJE-${year}-${String(sequence).padStart(3, "0")}`;
-}
-
-export function formatInvoiceNumber(year: number, sequence: number): string {
-  return `INV-${year}-${String(sequence).padStart(3, "0")}`;
 }
 
 export async function allocateOrderNumber(orderDate: Date): Promise<string> {

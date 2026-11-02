@@ -11,33 +11,9 @@ import {
   updateInvoice,
 } from "@/server/repositories/invoice-repository";
 import type { InvoiceStatus } from "@/server/models/enums";
+import { calculateInvoiceTotals } from "@/server/utils/invoice-math";
 import { serializeInvoice } from "@/server/utils/serializers";
 import type { PaginatedResult } from "@/server/utils/pagination";
-
-function calculateInvoiceTotals(
-  lineItems: Array<{ description: string; quantity: number; unitPrice: number }>,
-  gstRate: number
-) {
-  const normalizedLineItems = lineItems.map((item) => {
-    const amount = Number((item.quantity * item.unitPrice).toFixed(2));
-    return {
-      description: item.description.trim(),
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      amount,
-    };
-  });
-
-  const subtotal = Number(
-    normalizedLineItems
-      .reduce((sum, item) => sum + item.amount, 0)
-      .toFixed(2)
-  );
-  const gstAmount = Number(((subtotal * gstRate) / 100).toFixed(2));
-  const total = Number((subtotal + gstAmount).toFixed(2));
-
-  return { normalizedLineItems, subtotal, gstAmount, total };
-}
 
 export async function listInvoicesForApi(filter: {
   page?: number;

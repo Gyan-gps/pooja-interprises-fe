@@ -2,6 +2,9 @@ import "server-only";
 
 import { z } from "zod";
 
+const PLACEHOLDER_AUTH_SECRET_PATTERN =
+  /replace-with|change-me|example|your-secret|password123/i;
+
 const serverEnvironmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   NEXT_MONGODB_URL: z
@@ -11,7 +14,17 @@ const serverEnvironmentSchema = z.object({
   AUTH_SECRET: z
     .string()
     .trim()
-    .min(32, "AUTH_SECRET must be at least 32 characters"),
+    .min(32, "AUTH_SECRET must be at least 32 characters")
+    .superRefine((value, context) => {
+      if (process.env.NODE_ENV !== "production") return;
+      if (PLACEHOLDER_AUTH_SECRET_PATTERN.test(value)) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "AUTH_SECRET looks like a placeholder; set a strong unique secret in production",
+        });
+      }
+    }),
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
 });
 
