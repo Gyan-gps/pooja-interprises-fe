@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Printer, X } from "lucide-react";
 import { NAV_ITEMS } from "@/lib/constants";
+import { LogoutButton } from "@/features/auth/LogoutButton";
 
 interface SidebarProps {
   /** Mobile drawer state — ignored on desktop, where the sidebar is always visible. */
@@ -82,6 +83,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <div className="text-[10px] truncate" style={{ color: "rgba(255,255,255,0.4)" }}>Pooja Enterprises</div>
             </div>
           </div>
+          <LogoutButton />
         </div>
       </aside>
     </>

@@ -8,6 +8,11 @@ const serverEnvironmentSchema = z.object({
     .string()
     .trim()
     .min(1, "NEXT_MONGODB_URL is required"),
+  AUTH_SECRET: z
+    .string()
+    .trim()
+    .min(32, "AUTH_SECRET must be at least 32 characters"),
+  SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
 });
 
 export type ServerEnvironment = z.infer<typeof serverEnvironmentSchema>;
@@ -26,6 +31,8 @@ export function getServerEnvironment(): ServerEnvironment {
   const parsedEnvironment = serverEnvironmentSchema.safeParse({
     NODE_ENV: process.env.NODE_ENV,
     NEXT_MONGODB_URL: process.env.NEXT_MONGODB_URL,
+    AUTH_SECRET: process.env.AUTH_SECRET,
+    SESSION_TTL_DAYS: process.env.SESSION_TTL_DAYS,
   });
 
   if (!parsedEnvironment.success) {

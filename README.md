@@ -9,7 +9,7 @@ for the implementation plan.
 
 ## Stack
 
-Next.js 15 · React 18 · TypeScript · Tailwind CSS 4 · MongoDB · Mongoose · Zod · Recharts · lucide-react
+Next.js 15 · React 18 · TypeScript · Tailwind CSS 4 · MongoDB · Mongoose · Zod · bcryptjs · jose · Recharts · lucide-react
 
 ## Setup
 
@@ -18,24 +18,42 @@ npm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and set a real MongoDB connection string:
+Edit `.env.local`:
 
 ```env
 NODE_ENV=development
 NEXT_MONGODB_URL=mongodb://127.0.0.1:27017/pooja-enterprises
+AUTH_SECRET=replace-with-a-long-random-secret-at-least-32-chars
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-me-now
 ```
 
 `.env`, `.env.local`, and `.env*.local` are gitignored. Never commit credentials.
 
+Create the first Admin user:
+
+```bash
+npm run seed:admin
+```
+
 ## Scripts
 
 ```bash
-npm install     # install dependencies
-npm run dev     # start the Next.js dev server
-npm run build   # production build
-npm run start   # serve the production build
-npm run lint    # eslint
+npm install        # install dependencies
+npm run dev        # start the Next.js dev server
+npm run build      # production build
+npm run start      # serve the production build
+npm run lint       # eslint
+npm run seed:admin # create Admin from ADMIN_EMAIL / ADMIN_PASSWORD
 ```
+
+## Auth
+
+- Admin email/password login at `/login`
+- HttpOnly signed session cookie (`pe_session`), 7-day TTL by default
+- Dashboard routes and protected APIs require a valid session
+- Logout invalidates the current session only (multi-device allowed)
+- Public: `/login`, `/api/v1/health`, `/api/v1/auth/login`, `/api/v1/auth/logout`
 
 ## Health check
 
@@ -47,6 +65,23 @@ curl http://localhost:3000/api/v1/health
 
 Success returns HTTP 200 with `{ "success": true, "data": { "status": "ok", "database": { ... } } }`.
 If the database is unreachable, the endpoint returns HTTP 503.
+
+## Business APIs (`/api/v1`)
+
+All routes below require an Admin session cookie except the public auth/health endpoints.
+
+| Resource | Endpoints |
+|---|---|
+| Clients | `GET/POST /clients`, `GET/PATCH/DELETE /clients/:id`, `POST /clients/:id/notes` |
+| Staff | `GET/POST /staff`, `GET/PATCH/DELETE /staff/:id` |
+| Orders | `GET/POST /orders`, `GET/PATCH/DELETE /orders/:id`, `PATCH /orders/:id/status`, `POST /orders/:id/delivery` |
+| Tasks | `GET/POST /tasks`, `GET/PATCH/DELETE /tasks/:id` |
+| Invoices | `GET/POST /invoices`, `GET/PATCH/DELETE /invoices/:id` |
+| Settings | `GET/PUT /settings` |
+
+Responses use `{ success: true, data }` or `{ success: false, error: { code, message } }`.
+List endpoints support `page`, `pageSize`, and resource-specific filters.
+Deletes are soft (`isActive: false`). Invoice totals/GST are calculated on the server.
 
 ## Structure
 
@@ -95,7 +130,9 @@ Prefer complete words (`customer`, not `cust`). Booleans should read as state (`
 - `/dashboard/staff`, `/dashboard/staff/[id]`
 - `/dashboard/reports` — CSV export
 - `/dashboard/settings`
+- `/login` — Admin sign in
 - `/api/v1/health` — database health probe
+- `/api/v1/auth/login` · `/api/v1/auth/logout` · `/api/v1/auth/me`
 - unmatched paths → `not-found`
 
 ## Deploying to Vercel

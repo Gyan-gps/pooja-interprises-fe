@@ -10,6 +10,7 @@ interface ButtonProps {
   size?: ButtonSize;
   className?: string;
   type?: "button" | "submit";
+  disabled?: boolean;
 }
 
 const SIZE_CLS: Record<ButtonSize, string> = {
@@ -31,12 +32,14 @@ export function Button({
   size = "md",
   className = "",
   type = "button",
+  disabled = false,
 }: ButtonProps) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 font-semibold rounded-lg border transition-all cursor-pointer ${SIZE_CLS[size]} ${VARIANT_CLS[variant]} ${className}`}
+      disabled={disabled}
+      className={`inline-flex items-center gap-1.5 font-semibold rounded-lg border transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${SIZE_CLS[size]} ${VARIANT_CLS[variant]} ${className}`}
     >
       {children}
     </button>
