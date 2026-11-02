@@ -18,7 +18,7 @@ import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AssignTaskModal } from "../staff/AssignTaskModal";
-import type { Task } from "../../types";
+import type { CreateTaskInput } from "../../types";
 
 const QUICK_ACTIONS = [
   { label: "Create Order", icon: Plus, action: "orders", bg: "bg-[#E84C1E]" },
@@ -31,7 +31,7 @@ export function Dashboard() {
   usePageTitle("Dashboard");
   const router = useRouter();
   const toast = useToast();
-  const { orders, staff, tasks, createTask } = useAppData();
+  const { orders, staff, createTask } = useAppData();
   const [showAssignTask, setShowAssignTask] = useState(false);
 
   const active = orders.filter(o => !["Delivered", "Overdue"].includes(o.status)).length;
@@ -47,7 +47,7 @@ export function Dashboard() {
     }
   }
 
-  async function handleCreateTask(task: Task) {
+  async function handleCreateTask(task: CreateTaskInput) {
     await createTask(task);
     setShowAssignTask(false);
     toast.show(`Task "${task.name}" assigned.`);
@@ -143,7 +143,7 @@ export function Dashboard() {
                 onClick={() => router.push(`/dashboard/orders/${o.id}`)}
                 className="bg-white border border-emerald-200 rounded-xl p-3 text-left hover:border-emerald-400 transition-colors cursor-pointer"
               >
-                <div className="font-mono text-xs font-bold text-emerald-700">{o.id}</div>
+                <div className="font-mono text-xs font-bold text-emerald-700">{o.orderNumber}</div>
                 <div className="text-xs font-semibold text-foreground mt-0.5 leading-snug">{o.client}</div>
                 <div className="text-[10px] text-muted-foreground">{o.type} · {o.qty.toLocaleString()} pcs</div>
                 <div className="text-[10px] font-mono text-emerald-600 mt-1">Due: {o.dueDate}</div>
@@ -172,7 +172,7 @@ export function Dashboard() {
             <tbody>
               {orders.slice(0, 6).map(o => (
                 <tr key={o.id} onClick={() => router.push(`/dashboard/orders/${o.id}`)} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer">
-                  <td className="px-4 py-3 font-mono text-xs font-bold text-foreground">{o.id}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-foreground">{o.orderNumber}</td>
                   <td className="px-4 py-3 text-sm text-foreground">{o.client}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{o.type}</td>
                   <td className="px-4 py-3 font-mono text-xs text-foreground">{o.qty.toLocaleString()}</td>
@@ -189,7 +189,6 @@ export function Dashboard() {
         <AssignTaskModal
           orders={orders}
           staff={staff}
-          existingTasks={tasks}
           onClose={() => setShowAssignTask(false)}
           onCreate={handleCreateTask}
         />

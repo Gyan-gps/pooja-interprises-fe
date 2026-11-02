@@ -1,36 +1,74 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { ordersRepository } from "./repositories/ordersRepository";
-import { clientsRepository } from "./repositories/clientsRepository";
-import { staffRepository } from "./repositories/staffRepository";
-import { tasksRepository } from "./repositories/tasksRepository";
-import { settingsRepository } from "./repositories/settingsRepository";
-import { migrateOrder } from "./orderHistory";
-import type { BusinessSettings, Client, Order, StaffMember, Task } from "../types";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  createClientApi,
+  deleteClientApi,
+  updateClientApi,
+} from "@/lib/api/clients-api";
+import {
+  createOrderApi,
+  deleteOrderApi,
+  updateOrderApi,
+  updateOrderStatusApi,
+} from "@/lib/api/orders-api";
+import {
+  createStaffApi,
+  deleteStaffApi,
+  updateStaffApi,
+} from "@/lib/api/staff-api";
+import {
+  createTaskApi,
+  deleteTaskApi,
+  updateTaskApi,
+} from "@/lib/api/tasks-api";
+import { saveSettingsApi } from "@/lib/api/settings-api";
+import { loadDashboardData } from "@/lib/api/bootstrap";
+import { ApiRequestError } from "@/lib/api/http";
+import type {
+  BusinessSettings,
+  Client,
+  CreateClientInput,
+  CreateOrderInput,
+  CreateStaffInput,
+  CreateTaskInput,
+  Order,
+  StaffMember,
+  Task,
+} from "@/types";
 
 interface AppDataContextValue {
   loading: boolean;
+  errorMessage: string | null;
+  refreshAll: () => Promise<void>;
 
   orders: Order[];
-  createOrder: (order: Order) => Promise<Order>;
+  createOrder: (input: CreateOrderInput) => Promise<Order>;
   updateOrder: (id: string, patch: Partial<Order>) => Promise<Order>;
   deleteOrder: (id: string) => Promise<void>;
 
   clients: Client[];
-  createClient: (client: Client) => Promise<Client>;
-  updateClient: (id: number, patch: Partial<Client>) => Promise<Client>;
-  deleteClient: (id: number) => Promise<void>;
+  createClient: (input: CreateClientInput) => Promise<Client>;
+  updateClient: (id: string, patch: Partial<Client>) => Promise<Client>;
+  deleteClient: (id: string) => Promise<void>;
 
   staff: StaffMember[];
-  createStaff: (member: StaffMember) => Promise<StaffMember>;
-  updateStaff: (id: number, patch: Partial<StaffMember>) => Promise<StaffMember>;
-  deleteStaff: (id: number) => Promise<void>;
+  createStaff: (input: CreateStaffInput) => Promise<StaffMember>;
+  updateStaff: (id: string, patch: Partial<StaffMember>) => Promise<StaffMember>;
+  deleteStaff: (id: string, reassignTasksToStaffId?: string) => Promise<void>;
 
   tasks: Task[];
-  createTask: (task: Task) => Promise<Task>;
-  updateTask: (id: number, patch: Partial<Task>) => Promise<Task>;
-  deleteTask: (id: number) => Promise<void>;
+  createTask: (input: CreateTaskInput) => Promise<Task>;
+  updateTask: (id: string, patch: Partial<Task>) => Promise<Task>;
+  deleteTask: (id: string) => Promise<void>;
 
   settings: BusinessSettings;
   saveSettings: (settings: BusinessSettings) => Promise<BusinessSettings>;
@@ -38,14 +76,9 @@ interface AppDataContextValue {
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
-/**
- * Holds every record the app operates on and the CRUD methods that touch
- * them, backed by the repositories in `./repositories`. Components call
- * `createOrder`/`updateClient`/etc. instead of raw setState — the day a real
- * API replaces localStorage, only the repository files change.
- */
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -60,125 +93,241 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const refreshAll = useCallback(async () => {
+    setErrorMessage(null);
+    const data = await loadDashboardData();
+    if (!mounted.current) return;
+
+    setOrders(data.orders);
+    setTasks(data.tasks);
+    setStaff(data.staff);
+    setClients(data.clients);
+    setSettings(data.settings);
+  }, []);
+
   useEffect(() => {
-    Promise.all([
-      ordersRepository.list(),
-      clientsRepository.list(),
-      staffRepository.list(),
-      tasksRepository.list(),
-      settingsRepository.get(),
-    ]).then(async ([o, c, s, t, st]) => {
-      if (!mounted.current) return;
-      const migrated = o.map(migrateOrder);
-      // Persist Packing → Ready (etc.) so localStorage matches the current workflow.
-      await Promise.all(
-        migrated
-          .filter((order, i) => order.status !== o[i].status)
-          .map(order => ordersRepository.update(order.id, { status: order.status }))
+    refreshAll()
+      .catch((error: unknown) => {
+        if (!mounted.current) return;
+        if (error instanceof ApiRequestError && error.statusCode === 401) {
+          return;
+        }
+        setErrorMessage(
+          error instanceof Error ? error.message : "Failed to load dashboard data."
+        );
+      })
+      .finally(() => {
+        if (mounted.current) setLoading(false);
+      });
+  }, [refreshAll]);
+
+  const createOrder = useCallback(
+    async (input: CreateOrderInput) => {
+      const created = await createOrderApi(input, clients);
+      setOrders((prev) => [created, ...prev]);
+      setClients((prev) =>
+        prev.map((client) =>
+          client.id === created.clientId
+            ? {
+                ...client,
+                orders: client.orders + 1,
+                lastOrder: created.orderDate,
+              }
+            : client
+        )
       );
-      if (!mounted.current) return;
-      setOrders(migrated);
-      setClients(c);
-      setStaff(s);
-      setTasks(t);
-      setSettings(st);
-      setLoading(false);
-    });
-  }, []);
+      return created;
+    },
+    [clients]
+  );
 
-  // Orders
-  const createOrder = useCallback(async (order: Order) => {
-    const created = await ordersRepository.create(order);
-    setOrders(prev => [created, ...prev]);
-    return created;
-  }, []);
+  const updateOrder = useCallback(
+    async (id: string, patch: Partial<Order>) => {
+      const staffId =
+        patch.staffId ??
+        (patch.staff && patch.staff !== "—"
+          ? staff.find((member) => member.name === patch.staff)?.id
+          : undefined);
 
-  const updateOrder = useCallback(async (id: string, patch: Partial<Order>) => {
-    const updated = await ordersRepository.update(id, patch);
-    setOrders(prev => prev.map(o => (o.id === id ? updated : o)));
-    return updated;
-  }, []);
+      let updated: Order;
+      if (patch.deliveredTo) {
+        updated = await updateOrderApi(id, { ...patch, staffId }, clients);
+      } else if (patch.status) {
+        updated = await updateOrderStatusApi(
+          id,
+          {
+            status: patch.status,
+            staffId,
+            readyCount: patch.readyCount,
+          },
+          clients
+        );
+      } else {
+        updated = await updateOrderApi(id, { ...patch, staffId }, clients);
+      }
+
+      setOrders((prev) => prev.map((order) => (order.id === id ? updated : order)));
+      return updated;
+    },
+    [clients, staff]
+  );
 
   const deleteOrder = useCallback(async (id: string) => {
-    await ordersRepository.remove(id);
-    setOrders(prev => prev.filter(o => o.id !== id));
+    await deleteOrderApi(id);
+    setOrders((prev) => prev.filter((order) => order.id !== id));
   }, []);
 
-  // Clients
-  const createClient = useCallback(async (client: Client) => {
-    const created = await clientsRepository.create(client);
-    setClients(prev => [created, ...prev]);
+  const createClient = useCallback(async (input: CreateClientInput) => {
+    const created = await createClientApi(input, orders);
+    setClients((prev) => [created, ...prev]);
     return created;
+  }, [orders]);
+
+  const updateClient = useCallback(
+    async (id: string, patch: Partial<Client>) => {
+      const updated = await updateClientApi(id, patch, orders);
+      setClients((prev) =>
+        prev.map((client) => (client.id === id ? updated : client))
+      );
+      return updated;
+    },
+    [orders]
+  );
+
+  const deleteClient = useCallback(async (id: string) => {
+    await deleteClientApi(id);
+    setClients((prev) => prev.filter((client) => client.id !== id));
   }, []);
 
-  const updateClient = useCallback(async (id: number, patch: Partial<Client>) => {
-    const updated = await clientsRepository.update(id, patch);
-    setClients(prev => prev.map(c => (c.id === id ? updated : c)));
-    return updated;
-  }, []);
-
-  const deleteClient = useCallback(async (id: number) => {
-    await clientsRepository.remove(id);
-    setClients(prev => prev.filter(c => c.id !== id));
-  }, []);
-
-  // Staff
-  const createStaff = useCallback(async (member: StaffMember) => {
-    const created = await staffRepository.create(member);
-    setStaff(prev => [...prev, created]);
+  const createStaff = useCallback(async (input: CreateStaffInput) => {
+    const created = await createStaffApi(input, tasks);
+    setStaff((prev) => [...prev, created]);
     return created;
+  }, [tasks]);
+
+  const updateStaff = useCallback(
+    async (id: string, patch: Partial<StaffMember>) => {
+      const updated = await updateStaffApi(id, patch, tasks);
+      setStaff((prev) =>
+        prev.map((member) => (member.id === id ? updated : member))
+      );
+      return updated;
+    },
+    [tasks]
+  );
+
+  const deleteStaff = useCallback(
+    async (id: string, reassignTasksToStaffId?: string) => {
+      await deleteStaffApi(id, reassignTasksToStaffId);
+      setStaff((prev) => prev.filter((member) => member.id !== id));
+      if (reassignTasksToStaffId) {
+        setTasks((prev) =>
+          prev.map((task) =>
+            task.staffId === id && task.status !== "Completed"
+              ? { ...task, staffId: reassignTasksToStaffId }
+              : task
+          )
+        );
+      }
+    },
+    []
+  );
+
+  const createTask = useCallback(
+    async (input: CreateTaskInput) => {
+      const created = await createTaskApi(input, orders);
+      setTasks((prev) => [created, ...prev]);
+      setStaff((prev) =>
+        prev.map((member) =>
+          member.id === created.staffId
+            ? { ...member, active: member.active + 1 }
+            : member
+        )
+      );
+      return created;
+    },
+    [orders]
+  );
+
+  const updateTask = useCallback(
+    async (id: string, patch: Partial<Task>) => {
+      const updated = await updateTaskApi(id, patch, orders);
+      setTasks((prev) => prev.map((task) => (task.id === id ? updated : task)));
+      return updated;
+    },
+    [orders]
+  );
+
+  const deleteTask = useCallback(async (id: string) => {
+    await deleteTaskApi(id);
+    setTasks((prev) => prev.filter((task) => task.id !== id));
   }, []);
 
-  const updateStaff = useCallback(async (id: number, patch: Partial<StaffMember>) => {
-    const updated = await staffRepository.update(id, patch);
-    setStaff(prev => prev.map(s => (s.id === id ? updated : s)));
-    return updated;
-  }, []);
-
-  const deleteStaff = useCallback(async (id: number) => {
-    await staffRepository.remove(id);
-    setStaff(prev => prev.filter(s => s.id !== id));
-  }, []);
-
-  // Tasks
-  const createTask = useCallback(async (task: Task) => {
-    const created = await tasksRepository.create(task);
-    setTasks(prev => [created, ...prev]);
-    return created;
-  }, []);
-
-  const updateTask = useCallback(async (id: number, patch: Partial<Task>) => {
-    const updated = await tasksRepository.update(id, patch);
-    setTasks(prev => prev.map(t => (t.id === id ? updated : t)));
-    return updated;
-  }, []);
-
-  const deleteTask = useCallback(async (id: number) => {
-    await tasksRepository.remove(id);
-    setTasks(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  // Settings
   const saveSettings = useCallback(async (next: BusinessSettings) => {
-    const saved = await settingsRepository.save(next);
+    const saved = await saveSettingsApi(next);
     setSettings(saved);
     return saved;
   }, []);
 
-  if (loading || !settings) {
+  if (loading) {
     return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  }
+
+  if (errorMessage || !settings) {
+    return (
+      <div className="p-6 space-y-3">
+        <p className="text-sm text-red-700">
+          {errorMessage || "Unable to load dashboard data."}
+        </p>
+        <button
+          type="button"
+          className="text-sm font-semibold text-[#E84C1E] underline"
+          onClick={() => {
+            setLoading(true);
+            refreshAll()
+              .catch((error: unknown) => {
+                setErrorMessage(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to load dashboard data."
+                );
+              })
+              .finally(() => setLoading(false));
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   const value: AppDataContextValue = {
     loading,
-    orders, createOrder, updateOrder, deleteOrder,
-    clients, createClient, updateClient, deleteClient,
-    staff, createStaff, updateStaff, deleteStaff,
-    tasks, createTask, updateTask, deleteTask,
-    settings, saveSettings,
+    errorMessage,
+    refreshAll,
+    orders,
+    createOrder,
+    updateOrder,
+    deleteOrder,
+    clients,
+    createClient,
+    updateClient,
+    deleteClient,
+    staff,
+    createStaff,
+    updateStaff,
+    deleteStaff,
+    tasks,
+    createTask,
+    updateTask,
+    deleteTask,
+    settings,
+    saveSettings,
   };
 
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  return (
+    <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
+  );
 }
 
 export function useAppData() {

@@ -5,35 +5,41 @@ import { Modal } from "../../components/ui/Modal";
 import { Button } from "../../components/ui/Button";
 import { SelectField, TextField } from "../../components/ui/FormField";
 import { required } from "../../lib/validation";
-import type { Order, StaffMember, Task, TaskPriority } from "../../types";
+import type { CreateTaskInput, Order, StaffMember, TaskPriority } from "../../types";
 
 const PRIORITIES: TaskPriority[] = ["High", "Medium", "Low"];
 
 interface AssignTaskModalProps {
   orders: Order[];
   staff: StaffMember[];
-  existingTasks: Task[];
   /** Preselects the order this task is for, when opened from an order's context. */
   defaultOrderId?: string;
   /** Preselects the assignee, when opened from a staff member's profile. */
-  defaultStaffId?: number;
+  defaultStaffId?: string;
   onClose: () => void;
-  onCreate: (task: Task) => void;
+  onCreate: (task: CreateTaskInput) => void;
 }
 
 interface FormState {
   name: string;
-  order: string;
+  orderId: string;
   staffId: string;
   priority: TaskPriority;
   due: string;
 }
 
-export function AssignTaskModal({ orders, staff, existingTasks, defaultOrderId, defaultStaffId, onClose, onCreate }: AssignTaskModalProps) {
+export function AssignTaskModal({
+  orders,
+  staff,
+  defaultOrderId,
+  defaultStaffId,
+  onClose,
+  onCreate,
+}: AssignTaskModalProps) {
   const [form, setForm] = useState<FormState>({
     name: "",
-    order: defaultOrderId ?? orders[0]?.id ?? "",
-    staffId: defaultStaffId ? String(defaultStaffId) : (staff[0] ? String(staff[0].id) : ""),
+    orderId: defaultOrderId ?? orders[0]?.id ?? "",
+    staffId: defaultStaffId ?? (staff[0]?.id ?? ""),
     priority: "Medium",
     due: "",
   });
@@ -50,10 +56,9 @@ export function AssignTaskModal({ orders, staff, existingTasks, defaultOrderId, 
     }
 
     onCreate({
-      id: Math.max(0, ...existingTasks.map(t => t.id)) + 1,
       name: form.name.trim(),
-      order: form.order,
-      staffId: Number(form.staffId),
+      orderId: form.orderId,
+      staffId: form.staffId,
       priority: form.priority,
       due: form.due,
       status: "Pending",
@@ -82,14 +87,14 @@ export function AssignTaskModal({ orders, staff, existingTasks, defaultOrderId, 
       <div className="grid grid-cols-2 gap-3">
         <SelectField
           label="Related Order"
-          value={form.order}
-          options={orders.map(o => o.id)}
-          onChange={v => setForm(p => ({ ...p, order: v }))}
+          value={form.orderId}
+          options={orders.map(o => ({ value: o.id, label: o.orderNumber }))}
+          onChange={v => setForm(p => ({ ...p, orderId: v }))}
         />
         <SelectField
           label="Assign To"
           value={form.staffId}
-          options={staff.map(s => ({ value: String(s.id), label: s.name }))}
+          options={staff.map(s => ({ value: s.id, label: s.name }))}
           onChange={v => setForm(p => ({ ...p, staffId: v }))}
         />
         <SelectField

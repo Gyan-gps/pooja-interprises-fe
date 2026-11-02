@@ -4,9 +4,8 @@ import { useState } from "react";
 import { Modal } from "../../components/ui/Modal";
 import { Button } from "../../components/ui/Button";
 import { SelectField, TextField } from "../../components/ui/FormField";
-import { nextNumericId } from "../../lib/id";
 import { required, uniqueBy } from "../../lib/validation";
-import type { StaffMember, StaffRole } from "../../types";
+import type { CreateStaffInput, StaffMember, StaffRole } from "../../types";
 
 const STAFF_ROLES: StaffRole[] = ["Designer", "Machine Operator", "Binder", "Delivery Person", "Manager"];
 
@@ -25,7 +24,7 @@ function initialsOf(name: string) {
 interface AddStaffModalProps {
   existingStaff: StaffMember[];
   onClose: () => void;
-  onCreate: (member: StaffMember) => void;
+  onCreate: (member: CreateStaffInput) => void;
 }
 
 interface FormState {
@@ -49,11 +48,8 @@ export function AddStaffModal({ existingStaff, onClose, onCreate }: AddStaffModa
     }
 
     onCreate({
-      id: nextNumericId(existingStaff),
       name,
       role: form.role,
-      active: 0,
-      completed: 0,
       initials: initialsOf(name),
       color: AVATAR_COLORS[existingStaff.length % AVATAR_COLORS.length],
     });

@@ -13,12 +13,11 @@ import { SelectField, TextAreaField, TextField } from "../../components/ui/FormF
 import { ComboBox } from "../../components/ui/ComboBox";
 import { CURRENT_DATE, ORDER_TYPES } from "../../lib/data";
 import { clientTypeOptions, typeCls } from "../../lib/constants";
-import { nextOrderId } from "../../lib/id";
 import { formatMobile, mobileNumber, required } from "../../lib/validation";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
-import type { ClientType, Order } from "../../types";
+import type { ClientType } from "../../types";
 import { BranchFields, hasBranchErrors, toBranchDrafts, toBranches, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
 
 const CLIENT_TABS = ["overview", "orders", "notes"] as const;
@@ -63,7 +62,7 @@ export function ClientDetail() {
   const toast = useToast();
   const { clients, orders, createOrder, updateClient, deleteClient } = useAppData();
 
-  const client = clients.find(c => c.id === Number(id));
+  const client = clients.find(c => c.id === id);
 
   const [activeTab, setActiveTab] = useState<ClientTab>("overview");
   const [showCreateOrder, setShowCreateOrder] = useState(false);
@@ -97,21 +96,22 @@ export function ClientDetail() {
 
   async function handleCreateOrder() {
     if (!orderForm.qty) return;
-    const order: Order = {
-      id: nextOrderId(orders), clientId: client!.id, client: client!.org,
-      type: orderForm.type, qty: Number(orderForm.qty),
-      dueDate: orderForm.dueDate || "TBD", orderDate: orderForm.orderDate,
-      status: "New", staff: "—",
-      paperType: orderForm.paperType, size: orderForm.size,
-      colorMode: orderForm.colorMode, binding: orderForm.binding, notes: orderForm.notes,
-      deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "",
-      statusHistory: [{ status: "New", at: orderForm.orderDate }],
-    };
-    const created = await createOrder(order);
+    const created = await createOrder({
+      clientId: client!.id,
+      type: orderForm.type,
+      qty: Number(orderForm.qty),
+      dueDate: orderForm.dueDate || "TBD",
+      orderDate: orderForm.orderDate,
+      paperType: orderForm.paperType,
+      size: orderForm.size,
+      colorMode: orderForm.colorMode,
+      binding: orderForm.binding,
+      notes: orderForm.notes,
+    });
     setShowCreateOrder(false);
     setOrderForm(EMPTY_ORDER_FORM);
     setActiveTab("orders");
-    toast.show(`Order ${created.id} created for ${client!.name}.`);
+    toast.show(`Order ${created.orderNumber} created for ${client!.name}.`);
   }
 
   function startEdit() {
@@ -344,7 +344,7 @@ export function ClientDetail() {
                       <tbody>
                         {visibleOrders.map(o => (
                           <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/orders/${o.id}`)}>
-                            <td className="py-3 font-mono text-xs font-bold text-foreground">{o.id}</td>
+                            <td className="py-3 font-mono text-xs font-bold text-foreground">{o.orderNumber}</td>
                             <td className="py-3 text-xs text-muted-foreground">{o.type}</td>
                             <td className="py-3 font-mono text-xs">{o.qty.toLocaleString()}</td>
                             <td className="py-3 text-xs text-muted-foreground">{[o.paperType, o.size].filter(Boolean).join(" · ") || "—"}</td>

@@ -15,7 +15,6 @@ import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { SelectField, TextAreaField, TextField } from "../../components/ui/FormField";
 import { ORDER_TYPES, WORKFLOW_STEPS } from "../../lib/data";
 import { typeCls } from "../../lib/constants";
-import { withStatusChange } from "../../lib/orderHistory";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
@@ -55,7 +54,7 @@ export function OrderDetail() {
   });
   const fileRef = useRef<HTMLInputElement>(null);
 
-  usePageTitle(order ? `Order ${order.id}` : "Order not found");
+  usePageTitle(order ? `Order ${order.orderNumber}` : "Order not found");
 
   if (!order) {
     return (
@@ -108,7 +107,6 @@ export function OrderDetail() {
   async function handleDeliver() {
     if (!deliverForm.receiverName) return;
     await updateOrder(order!.id, {
-      ...withStatusChange(order!, "Delivered"),
       deliveredTo: deliverForm.receiverName,
       deliveredMobile: deliverForm.receiverMobile,
       deliveredDate: deliverForm.deliveryDate,
@@ -116,13 +114,13 @@ export function OrderDetail() {
       acknowledgementFile: deliverForm.fileName || "acknowledgement_signed.pdf",
     });
     setShowDeliver(false);
-    toast.show(`Order ${order!.id} marked delivered.`);
+    toast.show(`Order ${order!.orderNumber} marked delivered.`);
   }
 
   async function handleDelete() {
     await deleteOrder(order!.id);
     router.push("/dashboard/orders");
-    toast.show(`Order ${order!.id} deleted.`);
+    toast.show(`Order ${order!.orderNumber} deleted.`);
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -144,7 +142,7 @@ export function OrderDetail() {
                 <FileText size={20} className="text-[#E84C1E]" />
               </div>
               <div>
-                <div className="font-mono text-lg font-bold text-foreground">{order.id}</div>
+                <div className="font-mono text-lg font-bold text-foreground">{order.orderNumber}</div>
                 <div className="text-base font-semibold text-foreground">{order.client}</div>
                 <div className="text-sm text-muted-foreground">{order.type} · {order.qty.toLocaleString()} pcs</div>
                 <div className="flex items-center gap-2 mt-2">
@@ -375,7 +373,7 @@ export function OrderDetail() {
       {showDeliver && (
         <Modal
           title="Record Delivery"
-          subtitle={`${order.id} · ${order.client}`}
+          subtitle={`${order.orderNumber} · ${order.client}`}
           icon={<Truck size={16} className="text-emerald-600" />}
           onClose={() => setShowDeliver(false)}
           footer={
@@ -394,7 +392,7 @@ export function OrderDetail() {
         >
           <div className="bg-muted/40 rounded-xl px-4 py-3 flex items-center justify-between">
             <div>
-              <div className="font-mono text-xs font-bold text-muted-foreground">{order.id}</div>
+              <div className="font-mono text-xs font-bold text-muted-foreground">{order.orderNumber}</div>
               <div className="text-sm font-semibold text-foreground">{order.type}</div>
               <div className="text-xs text-muted-foreground">{order.qty.toLocaleString()} pcs · {order.client}</div>
             </div>
@@ -453,7 +451,7 @@ export function OrderDetail() {
       {showDelete && (
         <ConfirmDialog
           title="Delete Order"
-          description={`This permanently removes order ${order.id} for ${order.client}. This can't be undone.`}
+          description={`This permanently removes order ${order.orderNumber} for ${order.client}. This can't be undone.`}
           confirmLabel="Delete Order"
           onConfirm={handleDelete}
           onClose={() => setShowDelete(false)}

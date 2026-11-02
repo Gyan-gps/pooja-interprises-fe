@@ -12,7 +12,6 @@ import { DataTable, type DataTableColumn } from "../../components/ui/DataTable";
 import { SelectField, TextAreaField, TextField } from "../../components/ui/FormField";
 import { ComboBox } from "../../components/ui/ComboBox";
 import { CURRENT_DATE, ORDER_TYPES } from "../../lib/data";
-import { nextOrderId } from "../../lib/id";
 import { formatMobile, positiveInteger, required } from "../../lib/validation";
 import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
@@ -87,13 +86,13 @@ export function Orders() {
 
     const q = search.trim().toLowerCase();
     if (q) {
-      const haystack = [o.id, o.client, o.type, o.staff, o.paperType, o.size, o.branch ?? "", o.contactName ?? ""]
+      const haystack = [o.orderNumber, o.client, o.type, o.staff, o.paperType, o.size, o.branch ?? "", o.contactName ?? ""]
         .join(" ")
         .toLowerCase();
       if (!haystack.includes(q)) return false;
     }
 
-    if (advClient && o.clientId !== Number(advClient)) return false;
+    if (advClient && o.clientId !== advClient) return false;
     if (advType && o.type !== advType) return false;
     if (advStaff && o.staff !== advStaff) return false;
     if (advPaper && !o.paperType.toLowerCase().includes(advPaper.toLowerCase())) return false;
@@ -173,27 +172,29 @@ export function Orders() {
       return;
     }
 
-    const order: Order = {
-      id: nextOrderId(orders), clientId: selectedClient.id, client: selectedClient.org,
-      ...(selectedBranch ? { branchId: selectedBranch.id, branch: selectedBranch.name } : {}),
-      contactName: form.contactName.trim(), contactMobile: form.mobile ? formatMobile(form.mobile) : "",
+    const created = await createOrder({
+      clientId: selectedClient.id,
+      ...(selectedBranch ? { branchId: selectedBranch.id } : {}),
+      contactName: form.contactName.trim(),
+      contactMobile: form.mobile ? formatMobile(form.mobile) : "",
       type: form.type.trim(),
-      qty: Number(form.qty), dueDate: form.dueDate || "TBD", orderDate: form.orderDate,
-      status: "New", staff: "—",
-      paperType: form.paperType, size: form.size, colorMode: form.colorMode,
-      binding: form.binding, notes: form.notes,
-      deliveredTo: "", deliveredMobile: "", deliveredDate: "", deliveryNotes: "", acknowledgementFile: "",
-      statusHistory: [{ status: "New", at: form.orderDate }],
-    };
-    const created = await createOrder(order);
+      qty: Number(form.qty),
+      dueDate: form.dueDate || "TBD",
+      orderDate: form.orderDate,
+      paperType: form.paperType,
+      size: form.size,
+      colorMode: form.colorMode,
+      binding: form.binding,
+      notes: form.notes,
+    });
     setShowCreate(false);
     setForm(EMPTY_FORM);
     setErrors({});
-    toast.show(`Order ${created.id} created.`);
+    toast.show(`Order ${created.orderNumber} created.`);
   }
 
   const columns: DataTableColumn<Order>[] = [
-    { key: "id", header: "Order ID", sortValue: o => o.id, render: o => <span className="font-mono text-xs font-bold text-foreground">{o.id}</span> },
+    { key: "id", header: "Order ID", sortValue: o => o.orderNumber, render: o => <span className="font-mono text-xs font-bold text-foreground">{o.orderNumber}</span> },
     { key: "client", header: "Client", sortValue: o => o.client, render: o => <span className="text-sm text-foreground">{o.client}</span> },
     { key: "type", header: "Type", render: o => <span className="text-xs text-muted-foreground">{o.type}</span> },
     { key: "qty", header: "Qty", sortValue: o => o.qty, render: o => <span className="font-mono text-xs text-foreground">{o.qty.toLocaleString()}</span> },

@@ -8,7 +8,7 @@ import type { Branch } from "../../types";
 
 export interface BranchDraft {
   /** Existing branch id, or undefined for a branch added in this form. */
-  id?: number;
+  id?: string;
   /** Stable React key, independent of id. */
   key: string;
   name: string;
@@ -50,11 +50,19 @@ export function hasBranchErrors(errors: BranchErrors[]): boolean {
   return errors.some(e => e.name || e.mobile);
 }
 
-/** Converts drafts to saved branches, keeping existing ids and assigning new ones after the highest. */
+/** Converts drafts to Branch objects for local edit state (API assigns real ids on save). */
 export function toBranches(drafts: BranchDraft[]): Branch[] {
-  let maxId = drafts.reduce((max, d) => Math.max(max, d.id ?? 0), 0);
   return drafts.map(d => ({
-    id: d.id ?? ++maxId,
+    id: d.id ?? d.key,
+    name: d.name.trim(),
+    mobile: formatMobile(d.mobile),
+    ...(d.address.trim() ? { address: d.address.trim() } : {}),
+  }));
+}
+
+/** Branch payloads for create/update API calls (no client-generated ids). */
+export function toBranchInputs(drafts: BranchDraft[]) {
+  return drafts.map(d => ({
     name: d.name.trim(),
     mobile: formatMobile(d.mobile),
     ...(d.address.trim() ? { address: d.address.trim() } : {}),

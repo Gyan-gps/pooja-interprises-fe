@@ -6,15 +6,14 @@ import { Button } from "../../components/ui/Button";
 import { TextField } from "../../components/ui/FormField";
 import { ComboBox } from "../../components/ui/ComboBox";
 import { clientTypeOptions } from "../../lib/constants";
-import { nextNumericId } from "../../lib/id";
 import { formatMobile, mobileNumber, required, uniqueBy } from "../../lib/validation";
-import type { Client, ClientType } from "../../types";
-import { BranchFields, hasBranchErrors, toBranches, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
+import type { Client, ClientType, CreateClientInput } from "../../types";
+import { BranchFields, hasBranchErrors, toBranchInputs, validateBranches, type BranchDraft, type BranchErrors } from "./BranchFields";
 
 interface AddClientModalProps {
   existingClients: Client[];
   onClose: () => void;
-  onCreate: (client: Client) => void;
+  onCreate: (client: CreateClientInput) => void;
 }
 
 interface FormState {
@@ -62,15 +61,12 @@ export function AddClientModal({ existingClients, onClose, onCreate }: AddClient
     }
 
     onCreate({
-      id: nextNumericId(existingClients),
       name: form.name.trim(),
       org: form.org.trim(),
       type: form.type,
       mobile: formatMobile(form.mobile),
-      orders: 0,
-      lastOrder: "—",
       status: "Active",
-      branches: toBranches(branches),
+      branches: toBranchInputs(branches),
     });
   }
 

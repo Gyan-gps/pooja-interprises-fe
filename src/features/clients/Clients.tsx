@@ -14,7 +14,7 @@ import { useToast } from "../../lib/toast";
 import { useUrlState } from "../../hooks/useUrlState";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AddClientModal } from "./AddClientModal";
-import type { Branch, Client } from "../../types";
+import type { Branch, Client, CreateClientInput } from "../../types";
 
 export function Clients() {
   usePageTitle("Clients");
@@ -38,11 +38,11 @@ export function Clients() {
   // Expand clients whose branches matched the search, so the matching branch is visible.
   const expandedKey = filtered.filter(branchMatches).map(c => c.id).join(",");
   const defaultExpanded = useMemo(
-    () => new Set<number>(expandedKey ? expandedKey.split(",").map(Number) : []),
+    () => new Set<string>(expandedKey ? expandedKey.split(",") : []),
     [expandedKey]
   );
 
-  async function handleCreateClient(client: Client) {
+  async function handleCreateClient(client: CreateClientInput) {
     await createClient(client);
     setShowAddClient(false);
     toast.show(`${client.name} added.`);

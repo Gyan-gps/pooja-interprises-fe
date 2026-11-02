@@ -14,7 +14,7 @@ import { useAppData } from "../../lib/appDataContext";
 import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AssignTaskModal } from "./AssignTaskModal";
-import type { StaffRole, Task, TaskStatus } from "../../types";
+import type { CreateTaskInput, StaffRole, Task, TaskStatus } from "../../types";
 
 const STAFF_ROLES: StaffRole[] = ["Designer", "Machine Operator", "Binder", "Delivery Person", "Manager"];
 const TASK_STATUSES: TaskStatus[] = ["Pending", "In Progress", "Completed"];
@@ -30,7 +30,7 @@ export function StaffDetail() {
   const toast = useToast();
   const { staff, tasks, orders, updateStaff, deleteStaff, createTask, updateTask, deleteTask } = useAppData();
 
-  const member = staff.find(s => s.id === Number(id));
+  const member = staff.find(s => s.id === id);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
@@ -78,7 +78,7 @@ export function StaffDetail() {
     toast.show("Staff profile updated.");
   }
 
-  async function handleCreateTask(task: Task) {
+  async function handleCreateTask(task: CreateTaskInput) {
     await createTask(task);
     setShowAssignTask(false);
     toast.show(`Task "${task.name}" assigned to ${member!.name}.`);
@@ -91,11 +91,10 @@ export function StaffDetail() {
   }
 
   async function handleRemoveStaff() {
-    if (activeTasks.length > 0 && reassignTo) {
-      const targetId = Number(reassignTo);
-      await Promise.all(activeTasks.map(t => updateTask(t.id, { staffId: targetId })));
-    }
-    await deleteStaff(member!.id);
+    await deleteStaff(
+      member!.id,
+      activeTasks.length > 0 && reassignTo ? reassignTo : undefined
+    );
     router.push("/dashboard/staff");
     toast.show(`${member!.name} removed from the team.`);
   }
@@ -105,7 +104,7 @@ export function StaffDetail() {
     {
       key: "order", header: "Order",
       render: t => (
-        <button type="button" onClick={() => router.push(`/dashboard/orders/${t.order}`)} className="font-mono text-xs font-bold text-[#E84C1E] hover:underline cursor-pointer">
+        <button type="button" onClick={() => router.push(`/dashboard/orders/${t.orderId}`)} className="font-mono text-xs font-bold text-[#E84C1E] hover:underline cursor-pointer">
           {t.order}
         </button>
       ),
@@ -197,7 +196,6 @@ export function StaffDetail() {
         <AssignTaskModal
           orders={orders}
           staff={staff}
-          existingTasks={tasks}
           defaultStaffId={member.id}
           onClose={() => setShowAssignTask(false)}
           onCreate={handleCreateTask}

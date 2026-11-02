@@ -54,7 +54,7 @@ export function MovePhaseModal({
   return (
     <Modal
       title="Confirm phase move"
-      subtitle={`${order.id} · ${order.client}`}
+      subtitle={`${order.orderNumber} · ${order.client}`}
       onClose={onCancel}
       footer={
         <>

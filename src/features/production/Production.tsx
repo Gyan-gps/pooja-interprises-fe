@@ -6,7 +6,6 @@ import { AlertTriangle, ChevronRight, Search } from "lucide-react";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { KANBAN_COLORS } from "../../lib/constants";
 import { KANBAN_COLS } from "../../lib/data";
-import { withStatusChange } from "../../lib/orderHistory";
 import { useAppData } from "../../lib/appDataContext";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -37,7 +36,7 @@ export function Production() {
   const filteredOrders = useMemo(() => {
     if (!query) return orders;
     return orders.filter(o =>
-      [o.id, o.client, o.type, o.staff, o.status].some(v => v.toLowerCase().includes(query))
+      [o.orderNumber, o.client, o.type, o.staff, o.status].some(v => v.toLowerCase().includes(query))
     );
   }, [orders, query]);
 
@@ -56,13 +55,13 @@ export function Production() {
     if (!pendingMove) return;
     const { order, toStatus } = pendingMove;
     const patch: Partial<Order> = {
-      ...withStatusChange(order, toStatus),
+      status: toStatus,
       staff: staffName,
     };
     if (readyCount !== undefined) patch.readyCount = readyCount;
     await updateOrder(order.id, patch);
     setPendingMove(null);
-    toast.show(`${order.id} moved to ${toStatus} · assigned ${staffName}`);
+    toast.show(`${order.orderNumber} moved to ${toStatus} · assigned ${staffName}`);
   }
 
   return (
@@ -161,7 +160,7 @@ export function Production() {
                         dragging === o.id ? "opacity-40 scale-95" : ""
                       }`}
                     >
-                      <div className="font-mono text-[10px] font-bold text-muted-foreground mb-1">{o.id}</div>
+                      <div className="font-mono text-[10px] font-bold text-muted-foreground mb-1">{o.orderNumber}</div>
                       <div className="text-xs font-bold text-foreground leading-snug mb-1">{o.client}</div>
                       <div className="text-[10px] text-muted-foreground mb-2">{o.type}</div>
                       <div className="flex items-center justify-between">
@@ -206,7 +205,7 @@ export function Production() {
                 onClick={() => router.push(`/dashboard/orders/${o.id}`)}
                 className="bg-white border border-red-200 rounded-xl p-3 text-left hover:border-red-400 transition-colors cursor-pointer"
               >
-                <div className="font-mono text-xs font-bold text-red-600">{o.id}</div>
+                <div className="font-mono text-xs font-bold text-red-600">{o.orderNumber}</div>
                 <div className="text-xs font-semibold text-foreground mt-0.5 leading-snug">{o.client}</div>
                 <div className="text-[10px] text-muted-foreground">{o.type}</div>
                 <div className="text-xs font-bold text-red-600 mt-1.5">Due: {o.dueDate}</div>

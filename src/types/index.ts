@@ -12,14 +12,14 @@ export type OrderStatus =
 export type ClientType = string;
 
 export interface Branch {
-  id: number;
+  id: string;
   name: string;
   mobile: string;
   address?: string;
 }
 
 export interface Client {
-  id: number;
+  id: string;
   name: string;
   org: string;
   type: ClientType;
@@ -36,10 +36,13 @@ export interface OrderStatusEvent {
 }
 
 export interface Order {
+  /** MongoDB ObjectId used for routing and API calls. */
   id: string;
-  clientId: number;
+  /** Human-readable order code, e.g. PJE-2026-001. */
+  orderNumber: string;
+  clientId: string;
   client: string;
-  branchId?: number;
+  branchId?: string;
   branch?: string;
   contactName?: string;
   contactMobile?: string;
@@ -49,6 +52,7 @@ export interface Order {
   orderDate: string;
   status: OrderStatus;
   staff: string;
+  staffId?: string;
   paperType: string;
   size: string;
   colorMode: string;
@@ -72,7 +76,7 @@ export type StaffRole =
   | "Manager";
 
 export interface StaffMember {
-  id: number;
+  id: string;
   name: string;
   role: StaffRole;
   active: number;
@@ -86,10 +90,13 @@ export type TaskPriority = "High" | "Medium" | "Low";
 export type TaskStatus = "Pending" | "In Progress" | "Completed";
 
 export interface Task {
-  id: number;
+  id: string;
   name: string;
+  /** MongoDB order id. */
+  orderId: string;
+  /** Display/link label (order number). */
   order: string;
-  staffId: number;
+  staffId: string;
   priority: TaskPriority;
   due: string;
   status: TaskStatus;
@@ -102,4 +109,46 @@ export interface BusinessSettings {
   contactNumber: string;
   cityState: string;
   financialYear: string;
+}
+
+export interface CreateClientInput {
+  name: string;
+  org: string;
+  mobile: string;
+  type: string;
+  status?: "Active" | "Inactive";
+  branches?: Array<{ name: string; mobile: string; address?: string }>;
+}
+
+export interface CreateStaffInput {
+  name: string;
+  role: StaffRole;
+  initials?: string;
+  color?: string;
+}
+
+export interface CreateOrderInput {
+  clientId: string;
+  branchId?: string;
+  contactName?: string;
+  contactMobile?: string;
+  type: string;
+  qty: number;
+  orderDate?: string;
+  dueDate?: string;
+  paperType?: string;
+  size?: string;
+  colorMode?: string;
+  binding?: string;
+  notes?: string;
+  staffId?: string;
+}
+
+export interface CreateTaskInput {
+  name: string;
+  orderId: string;
+  staffId: string;
+  priority?: TaskPriority;
+  due: string;
+  status?: TaskStatus;
 }

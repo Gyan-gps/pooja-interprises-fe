@@ -13,7 +13,7 @@ import { useToast } from "../../lib/toast";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AddStaffModal } from "./AddStaffModal";
 import { AssignTaskModal } from "./AssignTaskModal";
-import type { StaffMember, Task, TaskStatus } from "../../types";
+import type { CreateStaffInput, CreateTaskInput, Task, TaskStatus } from "../../types";
 
 const TASK_STATUSES: TaskStatus[] = ["Pending", "In Progress", "Completed"];
 
@@ -28,13 +28,13 @@ export function Staff() {
   const [showAssignTask, setShowAssignTask] = useState(false);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
 
-  async function handleCreateStaff(member: StaffMember) {
+  async function handleCreateStaff(member: CreateStaffInput) {
     await createStaff(member);
     setShowAddStaff(false);
     toast.show(`${member.name} added to the team.`);
   }
 
-  async function handleCreateTask(task: Task) {
+  async function handleCreateTask(task: CreateTaskInput) {
     await createTask(task);
     setShowAssignTask(false);
     toast.show(`Task "${task.name}" assigned.`);
@@ -51,7 +51,7 @@ export function Staff() {
     {
       key: "order", header: "Order",
       render: t => (
-        <button type="button" onClick={() => router.push(`/dashboard/orders/${t.order}`)} className="font-mono text-xs font-bold text-[#E84C1E] hover:underline cursor-pointer">
+        <button type="button" onClick={() => router.push(`/dashboard/orders/${t.orderId}`)} className="font-mono text-xs font-bold text-[#E84C1E] hover:underline cursor-pointer">
           {t.order}
         </button>
       ),
@@ -157,7 +157,6 @@ export function Staff() {
         <AssignTaskModal
           orders={orders}
           staff={staff}
-          existingTasks={tasks}
           onClose={() => setShowAssignTask(false)}
           onCreate={handleCreateTask}
         />
