@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useZoom } from "@/hooks/useZoom";
+import { AppDataProvider } from "@/lib/appDataContext";
 
 export function DashboardClientLayout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,22 +20,24 @@ export function DashboardClientLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div
-      ref={containerRef}
-      className="flex h-screen overflow-hidden"
-      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
-    >
-      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
+    <AppDataProvider>
+      <div
+        ref={containerRef}
+        className="flex h-screen overflow-hidden"
+        style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+      >
+        <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-background min-w-0">
-        <Header
-          sectionLabel={activeNav?.label ?? "Not Found"}
-          onMenuClick={() => setMenuOpen(true)}
-        />
-        <main className="flex-1 overflow-y-auto">
-          <div className="min-h-full">{children}</div>
-        </main>
+        <div className="flex-1 flex flex-col overflow-hidden bg-background min-w-0">
+          <Header
+            sectionLabel={activeNav?.label ?? "Not Found"}
+            onMenuClick={() => setMenuOpen(true)}
+          />
+          <main className="flex-1 overflow-y-auto">
+            <div className="min-h-full">{children}</div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AppDataProvider>
   );
 }
