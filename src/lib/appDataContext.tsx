@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingIndicator } from "@/components/ui/LoadingIndicator";
+
 import {
   createContext,
   useCallback,
@@ -270,7 +272,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (loading) {
-    return <div className="p-4 lg:p-6 text-sm text-muted-foreground">Loading…</div>;
+    return <LoadingIndicator label="Loading dashboard data…" className="min-h-dvh bg-background" />;
   }
 
   if (errorMessage || !settings) {

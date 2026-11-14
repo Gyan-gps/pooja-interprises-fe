@@ -1,3 +1,4 @@
+import { LoadingIndicator } from "@/components/ui/LoadingIndicator";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "@/features/auth/LoginForm";
@@ -22,7 +23,7 @@ export default function LoginPage() {
             Operations dashboard sign in
           </p>
         </div>
-        <Suspense fallback={<div className="rounded-2xl border border-border bg-white/90 p-4 lg:p-6 text-sm text-muted-foreground">Loading…</div>}>
+        <Suspense fallback={<LoadingIndicator label="Loading sign-in…" className="rounded-2xl border border-border bg-white/90" />}>
           <LoginForm />
         </Suspense>
       </div>

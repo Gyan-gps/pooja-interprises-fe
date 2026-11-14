@@ -1,3 +1,4 @@
+import { LoadingIndicator } from "@/components/ui/LoadingIndicator";
 import { Suspense, type ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { DashboardClientLayout } from "@/components/layouts/DashboardClientLayout";
@@ -16,11 +17,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardClientLayout>
-      <Suspense
-        fallback={
-          <div className="p-4 lg:p-6 text-sm text-muted-foreground">Loading…</div>
-        }
-      >
+      <Suspense fallback={<LoadingIndicator label="Loading page…" />}>
         {children}
       </Suspense>
     </DashboardClientLayout>
