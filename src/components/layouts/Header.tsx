@@ -10,7 +10,7 @@ interface HeaderProps {
 export function Header({ sectionLabel, onMenuClick }: HeaderProps) {
   return (
     <header
-      className="bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0"
+      className="bg-card border-b border-border flex items-center justify-between px-4 lg:px-6 shrink-0"
       style={{ height: "52px" }}
     >
       <div className="flex items-center gap-2 min-w-0">

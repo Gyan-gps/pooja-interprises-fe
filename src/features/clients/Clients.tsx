@@ -68,7 +68,7 @@ export function Clients() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       <PageHeader
         title="Clients"
         subtitle={`${clients.length} registered clients`}

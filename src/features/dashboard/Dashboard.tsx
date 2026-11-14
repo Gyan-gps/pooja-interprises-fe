@@ -54,7 +54,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 lg:p-6 space-y-4 lg:space-y-5">
       <PageHeader
         title="Dashboard"
         subtitle="Pooja Enterprises — Printing & Publishing, Pune"
@@ -74,7 +74,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-xl p-5 lg:col-span-2">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5 lg:col-span-2">
           <h3 className="text-sm font-bold text-foreground mb-4">Orders by Month — 2026</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData} barSize={32}>
@@ -87,7 +87,7 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
           <h3 className="text-sm font-bold text-foreground mb-3">Client Distribution</h3>
           <ResponsiveContainer width="100%" height={148}>
             <PieChart>
@@ -113,7 +113,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-5">
+      <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
         <h3 className="text-sm font-bold text-foreground mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {QUICK_ACTIONS.map(({ label, icon: Icon, action, bg }) => (
@@ -154,7 +154,7 @@ export function Dashboard() {
       )}
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-4 lg:px-5 py-4 border-b border-border">
           <h3 className="text-sm font-bold text-foreground">Recent Orders</h3>
           <button type="button" onClick={() => router.push("/dashboard/orders")} className="text-xs text-[#E84C1E] font-semibold hover:underline flex items-center gap-0.5 cursor-pointer">
             View All <ChevronRight size={12} />

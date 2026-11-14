@@ -23,7 +23,7 @@ export function DashboardClientLayout({ children }: { children: ReactNode }) {
     <AppDataProvider>
       <div
         ref={containerRef}
-        className="flex h-screen overflow-hidden"
+        className="flex h-dvh overflow-hidden"
         style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
       >
         <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />

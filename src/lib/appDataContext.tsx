@@ -270,12 +270,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (loading) {
-    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+    return <div className="p-4 lg:p-6 text-sm text-muted-foreground">Loading…</div>;
   }
 
   if (errorMessage || !settings) {
     return (
-      <div className="p-6 space-y-3">
+      <div className="p-4 lg:p-6 space-y-3">
         <p className="text-sm text-red-700">
           {errorMessage || "Unable to load dashboard data."}
         </p>

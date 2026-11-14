@@ -50,7 +50,7 @@ export function Modal({ title, subtitle, icon, size = "md", onClose, children, f
   // the viewport. Portaling keeps every modal correctly full-viewport regardless.
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -58,8 +58,8 @@ export function Modal({ title, subtitle, icon, size = "md", onClose, children, f
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div ref={panelRef} className={`bg-card rounded-2xl shadow-2xl w-full ${SIZE_CLS[size]} border border-border my-auto`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+      <div ref={panelRef} className={`bg-card rounded-2xl shadow-2xl w-full ${SIZE_CLS[size]} border border-border flex max-h-full flex-col`}>
+        <div className="flex items-center justify-between shrink-0 px-4 lg:px-6 py-4 border-b border-border">
           <div>
             <h2 id={titleId} className="font-bold text-foreground flex items-center gap-2">
               {icon}
@@ -77,9 +77,9 @@ export function Modal({ title, subtitle, icon, size = "md", onClose, children, f
           </button>
         </div>
 
-        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">{children}</div>
+        <div className="p-4 lg:p-6 space-y-4 lg:space-y-5 min-h-0 max-h-[70vh] overflow-y-auto">{children}</div>
 
-        {footer && <div className="flex gap-2 px-6 pb-5">{footer}</div>}
+        {footer && <div className="flex flex-wrap shrink-0 gap-2 px-4 lg:px-6 pb-4 lg:pb-5">{footer}</div>}
       </div>
     </div>,
     document.body

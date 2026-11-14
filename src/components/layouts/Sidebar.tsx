@@ -31,7 +31,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         }`}
         style={{ background: "#111827" }}
       >
-        <div className="px-5 py-5 border-b flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+        <div className="px-4 lg:px-5 py-4 lg:py-5 border-b flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#E84C1E] flex items-center justify-center shrink-0">
               <Printer size={14} className="text-white" />

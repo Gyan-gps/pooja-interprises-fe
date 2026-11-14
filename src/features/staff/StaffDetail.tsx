@@ -44,11 +44,11 @@ export function StaffDetail() {
 
   if (!member) {
     return (
-      <div className="p-6">
+      <div className="p-4 lg:p-6">
         <Link href="/dashboard/staff" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
           <ArrowLeft size={14} /> Back to Staff
         </Link>
-        <div className="bg-card border border-border rounded-xl p-8 text-center">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-8 text-center">
           <p className="text-sm text-muted-foreground">No staff member found with id &ldquo;{id}&rdquo;.</p>
         </div>
       </div>
@@ -134,28 +134,28 @@ export function StaffDetail() {
   ];
 
   return (
-    <div className="p-6">
-      <Link href="/dashboard/staff" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 w-fit">
+    <div className="p-4 lg:p-6">
+      <Link href="/dashboard/staff" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:mb-5 w-fit">
         <ArrowLeft size={14} /> Back to Staff
       </Link>
 
-      <div className="bg-card border border-border rounded-xl p-5 mb-4">
+      <div className="bg-card border border-border rounded-xl p-4 lg:p-5 mb-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-4">
             <div className={`w-14 h-14 rounded-xl ${member.color} flex items-center justify-center text-white font-bold text-lg shrink-0`}>{member.initials}</div>
             {isEditing && editForm ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 max-w-md">
                 <TextField label="Full Name *" value={editForm.name} onChange={v => { setEditForm(p => p && { ...p, name: v }); setEditError(undefined); }} error={editError} />
                 <SelectField label="Role" value={editForm.role} options={STAFF_ROLES} onChange={v => setEditForm(p => p && { ...p, role: v as StaffRole })} />
               </div>
             ) : (
               <div>
-                <h2 className="font-bold text-foreground text-base">{member.name}</h2>
+                <h2 className="font-bold text-foreground text-base [overflow-wrap:anywhere]">{member.name}</h2>
                 <p className="text-sm text-muted-foreground">{member.role}</p>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-4 flex-wrap justify-end">
+          <div className="flex min-w-0 items-center gap-4 flex-wrap lg:justify-end">
             <div className="text-center">
               <div className="text-xl font-bold text-foreground">{member.active}</div>
               <div className="text-[10px] text-muted-foreground">Active</div>
@@ -170,7 +170,7 @@ export function StaffDetail() {
                 <Button variant="primary" onClick={saveEdit}>Save</Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button variant="secondary" onClick={() => setShowAssignTask(true)}><UserPlus size={14} /> Assign Task</Button>
                 <Button variant="secondary" onClick={startEdit}><Pencil size={13} /> Edit</Button>
                 <button

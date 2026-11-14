@@ -155,7 +155,7 @@ export function DataTable<T, C = never>({
       </div>
 
       {sorted.length === 0 && (
-        <div className="py-12 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+        <div className="py-4 lg:py-12 text-center text-sm text-muted-foreground">{emptyMessage}</div>
       )}
 
       {totalPages > 1 && (

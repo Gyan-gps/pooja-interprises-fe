@@ -58,11 +58,11 @@ export function OrderDetail() {
 
   if (!order) {
     return (
-      <div className="p-6">
+      <div className="p-4 lg:p-6">
         <Link href="/dashboard/orders" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
           <ArrowLeft size={14} /> Back to Orders
         </Link>
-        <div className="bg-card border border-border rounded-xl p-8 text-center">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-8 text-center">
           <p className="text-sm text-muted-foreground">No order found with id &ldquo;{id}&rdquo;.</p>
         </div>
       </div>
@@ -129,13 +129,13 @@ export function OrderDetail() {
   }
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 lg:p-6 space-y-4">
       <div>
         <Link href="/dashboard/orders" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
           <ArrowLeft size={14} /> Back to Orders
         </Link>
 
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#E84C1E]/10 flex items-center justify-center shrink-0">
@@ -158,7 +158,7 @@ export function OrderDetail() {
                 <button
                   type="button"
                   onClick={() => setShowDeliver(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 lg:px-5 py-2.5 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 transition-colors cursor-pointer"
                 >
                   <Truck size={15} /> Record Delivery
                 </button>
@@ -190,8 +190,8 @@ export function OrderDetail() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h3 className="text-sm font-bold text-foreground mb-5">Production Workflow</h3>
+      <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
+        <h3 className="text-sm font-bold text-foreground mb-4 lg:mb-5">Production Workflow</h3>
 
         {order.status === "Overdue" && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-700 flex items-center gap-2">
@@ -232,7 +232,7 @@ export function OrderDetail() {
       </div>
 
       {isEditing && editForm ? (
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Edit Order</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <SelectField label="Order Type" value={editForm.type} options={ORDER_TYPES} onChange={v => setEditForm(p => p && { ...p, type: v })} />
@@ -252,14 +252,14 @@ export function OrderDetail() {
               <TextAreaField label="Special Instructions" value={editForm.notes} onChange={v => setEditForm(p => p && { ...p, notes: v })} />
             </div>
           </div>
-          <div className="flex gap-2 mt-5">
+          <div className="flex gap-2 mt-4 lg:mt-5">
             <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
             <Button variant="primary" onClick={saveEdit}>Save Changes</Button>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Order Details</h3>
             <div className="space-y-3">
               {[
@@ -278,7 +278,7 @@ export function OrderDetail() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl p-5">
+          <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Schedule & Client</h3>
             <div className="space-y-3">
               {[
@@ -302,14 +302,14 @@ export function OrderDetail() {
       )}
 
       {!isEditing && order.notes && (
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5"><Info size={12} /> Special Instructions</h3>
           <p className="text-sm text-foreground leading-relaxed">{order.notes}</p>
         </div>
       )}
 
       {order.statusHistory.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-1.5"><History size={12} /> Status History</h3>
           <ol className="space-y-2">
             {order.statusHistory.map((event, i) => (
@@ -324,7 +324,7 @@ export function OrderDetail() {
       )}
 
       {order.status === "Delivered" && order.deliveredTo && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 lg:p-5">
           <h3 className="text-sm font-bold text-emerald-800 mb-4 flex items-center gap-2">
             <ClipboardCheck size={15} /> Delivery Acknowledgement
           </h3>
@@ -428,7 +428,7 @@ export function OrderDetail() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="w-full border-2 border-dashed border-border rounded-xl p-5 flex flex-col items-center gap-2 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all cursor-pointer group"
+                className="w-full border-2 border-dashed border-border rounded-xl p-4 lg:p-5 flex flex-col items-center gap-2 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all cursor-pointer group"
               >
                 <div className="w-10 h-10 rounded-xl bg-muted group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
                   <Upload size={18} className="text-muted-foreground group-hover:text-emerald-600" />

@@ -8,7 +8,7 @@ export function NotFound() {
   usePageTitle("Page Not Found");
 
   return (
-    <div className="p-6 flex flex-col items-center justify-center text-center min-h-[60vh] gap-4">
+    <div className="p-4 lg:p-6 flex flex-col items-center justify-center text-center min-h-[60vh] gap-4">
       <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
         <FileQuestion size={24} className="text-muted-foreground" />
       </div>

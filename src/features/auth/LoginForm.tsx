@@ -52,7 +52,7 @@ export function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-border bg-white/90 p-6 shadow-sm backdrop-blur"
+      className="rounded-2xl border border-border bg-white/90 p-4 lg:p-6 shadow-sm backdrop-blur"
     >
       <div className="space-y-4">
         <div>

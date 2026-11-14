@@ -34,7 +34,7 @@ export function Settings() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       <PageHeader title="Settings" subtitle="Business configuration & preferences" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
         {FIELDS.map(({ key, id, label }) => (
@@ -49,7 +49,7 @@ export function Settings() {
           </div>
         ))}
       </div>
-      <div className="mt-5">
+      <div className="mt-4 lg:mt-5">
         <Button variant="primary" onClick={handleSave} className={isDirty ? "" : "opacity-50 pointer-events-none"}>
           Save Settings
         </Button>

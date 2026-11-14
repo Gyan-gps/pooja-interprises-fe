@@ -99,7 +99,7 @@ export function Staff() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       <PageHeader
         title="Staff"
         subtitle="Team management & task assignments"
@@ -110,9 +110,9 @@ export function Staff() {
           </div>
         }
       />
-      <div className="flex border-b border-border mb-5">
+      <div className="flex border-b border-border mb-4 lg:mb-5">
         {(["staff", "tasks"] as const).map(tab => (
-          <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`px-5 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${activeTab === tab ? "border-b-2 border-[#E84C1E] text-[#E84C1E]" : "text-muted-foreground hover:text-foreground"}`}>
+          <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`px-4 lg:px-5 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${activeTab === tab ? "border-b-2 border-[#E84C1E] text-[#E84C1E]" : "text-muted-foreground hover:text-foreground"}`}>
             {tab === "staff" ? "Staff List" : "Task Assignments"}
           </button>
         ))}
@@ -124,7 +124,7 @@ export function Staff() {
               key={s.id}
               type="button"
               onClick={() => router.push(`/dashboard/staff/${s.id}`)}
-              className="bg-card border border-border rounded-xl p-5 flex items-start gap-4 text-left hover:border-[#E84C1E]/40 hover:shadow-sm transition-all cursor-pointer"
+              className="bg-card border border-border rounded-xl p-4 lg:p-5 flex items-start gap-4 text-left hover:border-[#E84C1E]/40 hover:shadow-sm transition-all cursor-pointer"
             >
               <div className={`w-11 h-11 rounded-xl ${s.color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>{s.initials}</div>
               <div className="flex-1 min-w-0">

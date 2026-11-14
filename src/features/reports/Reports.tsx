@@ -65,7 +65,7 @@ export function Reports() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       <PageHeader
         title="Reports"
         subtitle="Operations analytics & performance"
@@ -79,12 +79,12 @@ export function Reports() {
           </button>
         }
       />
-      <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="flex gap-2 mb-4 lg:mb-5 flex-wrap">
         {TABS.map(t => <FilterPill key={t.key} label={t.label} active={reportType === t.key} onClick={() => setReportType(t.key)} />)}
       </div>
 
       {reportType === "monthly" && (
-        <div className="bg-card border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-5">
           <h3 className="text-sm font-bold text-foreground mb-4">Monthly Order Volume — 2026</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={monthlyData} barSize={36}>

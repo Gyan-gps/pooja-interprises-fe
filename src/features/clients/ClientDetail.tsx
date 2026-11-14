@@ -79,11 +79,11 @@ export function ClientDetail() {
 
   if (!client) {
     return (
-      <div className="p-6">
+      <div className="p-4 lg:p-6">
         <Link href="/dashboard/clients" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
           <ArrowLeft size={14} /> Back to Clients
         </Link>
-        <div className="bg-card border border-border rounded-xl p-8 text-center">
+        <div className="bg-card border border-border rounded-xl p-4 lg:p-8 text-center">
           <p className="text-sm text-muted-foreground">No client found with id &ldquo;{id}&rdquo;.</p>
         </div>
       </div>
@@ -159,24 +159,24 @@ export function ClientDetail() {
   }
 
   return (
-    <div className="p-6">
-      <Link href="/dashboard/clients" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 w-fit">
+    <div className="p-4 lg:p-6">
+      <Link href="/dashboard/clients" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 lg:mb-5 w-fit">
         <ArrowLeft size={14} /> Back to Clients
       </Link>
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-border flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="p-4 lg:p-5 border-b border-border flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-[#E84C1E] flex items-center justify-center text-white font-bold text-lg shrink-0">{client.name.charAt(0)}</div>
             <div>
               <h2 className="font-bold text-foreground text-base">{client.name}</h2>
-              <p className="text-sm text-muted-foreground">{client.org}</p>
+              <p className="[overflow-wrap:anywhere] text-sm text-muted-foreground">{client.org}</p>
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold ${typeCls(client.type)}`}>{client.type}</span>
                 <StatusBadge label={client.status} />
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4 flex-wrap justify-end">
+          <div className="flex min-w-0 items-center gap-4 flex-wrap lg:justify-end">
             <div className="text-center">
               <div className="text-xl font-bold text-foreground">{clientOrders.length || client.orders}</div>
               <div className="text-[10px] text-muted-foreground">Orders</div>
@@ -190,7 +190,7 @@ export function ClientDetail() {
               <div className="text-[10px] text-muted-foreground">Active</div>
             </div>
             {!isEditing && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button variant="primary" onClick={() => setShowCreateOrder(true)}><Plus size={14} /> New Order</Button>
                 <Button variant="secondary" onClick={startEdit}><Pencil size={13} /> Edit</Button>
                 <button
@@ -213,7 +213,7 @@ export function ClientDetail() {
         </div>
 
         {isEditing && editForm ? (
-          <div className="p-5">
+          <div className="p-4 lg:p-5">
             <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Edit Client</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
               <TextField label="Contact Person *" value={editForm.name} onChange={v => { setEditForm(p => p && { ...p, name: v }); setEditErrors(p => ({ ...p, name: undefined })); }} error={editErrors.name} />
@@ -221,7 +221,7 @@ export function ClientDetail() {
               <TextField label="Mobile *" type="tel" value={editForm.mobile} onChange={v => { setEditForm(p => p && { ...p, mobile: v }); setEditErrors(p => ({ ...p, mobile: undefined })); }} error={editErrors.mobile} />
               <ComboBox label="Client Type" placeholder="Search or add type..." value={editForm.type} options={clientTypeOptions(clients, [editForm.type])} onChange={v => setEditForm(p => p && { ...p, type: v })} onCreate={v => setEditForm(p => p && { ...p, type: v.trim() })} />
             </div>
-            <div className="max-w-xl mt-5 pt-4 border-t border-border">
+            <div className="max-w-xl mt-4 lg:mt-5 pt-4 border-t border-border">
               <BranchFields
                 branches={editBranches}
                 errors={editBranchErrors}
@@ -231,20 +231,20 @@ export function ClientDetail() {
                 }}
               />
             </div>
-            <div className="flex gap-2 mt-5">
+            <div className="flex gap-2 mt-4 lg:mt-5">
               <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
               <Button variant="primary" onClick={saveEdit}>Save Changes</Button>
             </div>
           </div>
         ) : (
           <>
-            <div className="flex border-b border-border">
+            <div className="flex flex-wrap border-b border-border">
               {CLIENT_TABS.map(tab => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-3 text-sm font-semibold capitalize transition-colors cursor-pointer ${activeTab === tab ? "border-b-2 border-[#E84C1E] text-[#E84C1E]" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`px-2 sm:px-4 lg:px-5 py-3 text-sm font-semibold capitalize transition-colors cursor-pointer ${activeTab === tab ? "border-b-2 border-[#E84C1E] text-[#E84C1E]" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   {tab}
                   {tab === "orders" && clientOrders.length > 0 && (
@@ -254,9 +254,9 @@ export function ClientDetail() {
               ))}
             </div>
 
-            <div className="p-5">
+            <div className="p-4 lg:p-5">
               {activeTab === "overview" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                   <div>
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Contact Information</h4>
                     <div className="space-y-2.5 text-sm">
@@ -331,7 +331,7 @@ export function ClientDetail() {
                   </div>
 
                   {visibleOrders.length === 0 ? (
-                    <div className="py-10 text-center text-sm text-muted-foreground">No orders found{orderYearFilter !== "All" ? ` for ${orderYearFilter}` : ""}.</div>
+                    <div className="py-4 lg:py-10 text-center text-sm text-muted-foreground">No orders found{orderYearFilter !== "All" ? ` for ${orderYearFilter}` : ""}.</div>
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
@@ -358,7 +358,7 @@ export function ClientDetail() {
                   )}
 
                   {orderYearFilter === "All" && orderYears.length > 0 && (
-                    <div className="mt-5 pt-4 border-t border-border">
+                    <div className="mt-4 lg:mt-5 pt-4 border-t border-border">
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Year-wise Summary</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {orderYears.map(yr => {

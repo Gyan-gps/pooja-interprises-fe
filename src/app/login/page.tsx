@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#FFF0EB_0%,#F8F6F2_45%,#EEF2FF_100%)] flex items-center justify-center p-6">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#FFF0EB_0%,#F8F6F2_45%,#EEF2FF_100%)] flex items-center justify-center p-4 lg:p-6">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
+        <div className="mb-4 lg:mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E84C1E] text-white text-lg font-bold">
             P
           </div>
@@ -22,7 +22,7 @@ export default function LoginPage() {
             Operations dashboard sign in
           </p>
         </div>
-        <Suspense fallback={<div className="rounded-2xl border border-border bg-white/90 p-6 text-sm text-muted-foreground">Loading…</div>}>
+        <Suspense fallback={<div className="rounded-2xl border border-border bg-white/90 p-4 lg:p-6 text-sm text-muted-foreground">Loading…</div>}>
           <LoginForm />
         </Suspense>
       </div>

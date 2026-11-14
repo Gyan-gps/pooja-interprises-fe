@@ -13,11 +13,11 @@ import { useToast } from "../../lib/toast";
 import { MovePhaseModal } from "./MovePhaseModal";
 import type { Order, OrderStatus } from "../../types";
 
-const COLUMN_BODY_HEIGHT = "min(520px, calc(100vh - 22rem))";
+const COLUMN_BODY_HEIGHT = "clamp(12rem, calc(100dvh - 22rem), 520px)";
 
 interface PendingMove {
   order: Order;
-  toStatus: OrderStatus;
+  toStatus?: OrderStatus;
 }
 
 export function Production() {
@@ -51,9 +51,9 @@ export function Production() {
     setPendingMove({ order, toStatus: col });
   }
 
-  async function confirmMove(staffName: string, readyCount?: number) {
+  async function confirmMove(toStatus: OrderStatus, staffName: string, readyCount?: number) {
     if (!pendingMove) return;
-    const { order, toStatus } = pendingMove;
+    const { order } = pendingMove;
     const patch: Partial<Order> = {
       status: toStatus,
       staff: staffName,
@@ -65,10 +65,10 @@ export function Production() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 lg:p-6">
       <PageHeader
         title="Production Tracker"
-        subtitle="Drag a card to the next phase — you’ll confirm the move and assign staff before it updates"
+        subtitle="Use Move phase on a card or drag it to another column."
         actions={
           <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -84,7 +84,7 @@ export function Production() {
         }
       />
 
-      <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1 mb-4 lg:mb-5 overflow-x-auto pb-2">
         {KANBAN_COLS.map((col, i) => (
           <div key={col} className="flex items-center gap-1 shrink-0">
             <div
@@ -174,6 +174,17 @@ export function Production() {
                           {o.staff}
                         </div>
                       )}
+                      <button
+                        type="button"
+                        onClick={event => {
+                          event.stopPropagation();
+                          setPendingMove({ order: o });
+                        }}
+                        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg border border-border px-2 text-xs font-semibold hover:bg-muted"
+                        aria-label={`Move phase for ${o.orderNumber}`}
+                      >
+                        Move phase
+                      </button>
                     </div>
                   ))}
                   {colOrders.length === 0 && (
