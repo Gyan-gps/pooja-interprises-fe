@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   CheckCircle2, Truck, AlertTriangle, FileText, Calendar,
   Upload, Check, ClipboardCheck, User, Phone, ArrowLeft, Info, X,
@@ -36,6 +36,12 @@ interface EditForm {
 export function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const params = useSearchParams();
+  const fromProduction = params.get("from") === "production";
+  const productionSearch = params.get("q");
+  const productionQuery = productionSearch ? `?${new URLSearchParams({ q: productionSearch })}` : "";
+  const backHref = fromProduction ? `/dashboard/production${productionQuery}` : "/dashboard/orders";
+  const backLabel = fromProduction ? "Back to Production" : "Back to Orders";
   const toast = useToast();
   const { orders, clients, staff, updateOrder, deleteOrder } = useAppData();
 
@@ -59,8 +65,8 @@ export function OrderDetail() {
   if (!order) {
     return (
       <div className="p-4 lg:p-6">
-        <Link href="/dashboard/orders" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
-          <ArrowLeft size={14} /> Back to Orders
+        <Link href={backHref} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
+          <ArrowLeft size={14} /> {backLabel}
         </Link>
         <div className="bg-card border border-border rounded-xl p-4 lg:p-8 text-center">
           <p className="text-sm text-muted-foreground">No order found with id &ldquo;{id}&rdquo;.</p>
@@ -119,7 +125,7 @@ export function OrderDetail() {
 
   async function handleDelete() {
     await deleteOrder(order!.id);
-    router.push("/dashboard/orders");
+    router.push(backHref);
     toast.show(`Order ${order!.orderNumber} deleted.`);
   }
 
@@ -131,8 +137,8 @@ export function OrderDetail() {
   return (
     <div className="p-4 lg:p-6 space-y-4">
       <div>
-        <Link href="/dashboard/orders" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
-          <ArrowLeft size={14} /> Back to Orders
+        <Link href={backHref} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 w-fit">
+          <ArrowLeft size={14} /> {backLabel}
         </Link>
 
         <div className="bg-card border border-border rounded-xl p-4 lg:p-5">

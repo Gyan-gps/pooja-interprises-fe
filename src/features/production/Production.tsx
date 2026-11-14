@@ -43,6 +43,12 @@ export function Production() {
   const boardOrders = filteredOrders.filter(o => o.status !== "Overdue");
   const overdueOrders = filteredOrders.filter(o => o.status === "Overdue");
 
+  function openOrder(id: string) {
+    const params = new URLSearchParams({ from: "production" });
+    if (search) params.set("q", search);
+    router.push(`/dashboard/orders/${id}?${params}`);
+  }
+
   function handleDrop(col: OrderStatus) {
     const order = orders.find(o => o.id === dragging);
     setDragging(null);
@@ -154,7 +160,7 @@ export function Production() {
                           setDidDrag(false);
                           return;
                         }
-                        router.push(`/dashboard/orders/${o.id}`);
+                        openOrder(o.id);
                       }}
                       className={`bg-card border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing select-none shadow-sm hover:shadow-md hover:border-[#E84C1E]/40 transition-all ${
                         dragging === o.id ? "opacity-40 scale-95" : ""
@@ -213,7 +219,7 @@ export function Production() {
               <button
                 type="button"
                 key={o.id}
-                onClick={() => router.push(`/dashboard/orders/${o.id}`)}
+                onClick={() => openOrder(o.id)}
                 className="bg-white border border-red-200 rounded-xl p-3 text-left hover:border-red-400 transition-colors cursor-pointer"
               >
                 <div className="font-mono text-xs font-bold text-red-600">{o.orderNumber}</div>
