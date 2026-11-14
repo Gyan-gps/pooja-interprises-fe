@@ -34,27 +34,37 @@ export interface DashboardBootstrapData {
   settings: BusinessSettings;
 }
 
-export async function loadDashboardData(): Promise<DashboardBootstrapData> {
-  const query = toQueryString({ page: 1, pageSize: LIST_PAGE_SIZE });
+async function loadAll<T>(path: string): Promise<T[]> {
+  const items: T[] = [];
+  let page = 1;
+  while (true) {
+    const query = toQueryString({ page, pageSize: LIST_PAGE_SIZE });
+    const result = await apiRequest<ApiPaginated<T>>(path + query);
+    items.push(...result.items);
+    if (page >= result.totalPages) return items;
+    page += 1;
+  }
+}
 
+export async function loadDashboardData(): Promise<DashboardBootstrapData> {
   const [clientsPage, ordersPage, tasksPage, staffPage, settings] =
     await Promise.all([
-      apiRequest<ApiPaginated<ApiClient>>(`/api/v1/clients${query}`),
-      apiRequest<ApiPaginated<ApiOrder>>(`/api/v1/orders${query}`),
-      apiRequest<ApiPaginated<ApiTask>>(`/api/v1/tasks${query}`),
-      apiRequest<ApiPaginated<ApiStaff>>(`/api/v1/staff${query}`),
+      loadAll<ApiClient>("/api/v1/clients"),
+      loadAll<ApiOrder>("/api/v1/orders"),
+      loadAll<ApiTask>("/api/v1/tasks"),
+      loadAll<ApiStaff>("/api/v1/staff"),
       apiRequest<ApiSettings>("/api/v1/settings"),
     ]);
 
-  const clientsLite = clientsPage.items.map((client) =>
+  const clientsLite = clientsPage.map((client) =>
     mapApiClientToUi(client)
   );
-  const orders = ordersPage.items.map((order) =>
+  const orders = ordersPage.map((order) =>
     mapApiOrderToUi(order, clientsLite)
   );
-  const tasks = tasksPage.items.map((task) => mapApiTaskToUi(task, orders));
-  const staff = staffPage.items.map((member) => mapApiStaffToUi(member, tasks));
-  const clients = clientsPage.items.map((client) =>
+  const tasks = tasksPage.map((task) => mapApiTaskToUi(task, orders));
+  const staff = staffPage.map((member) => mapApiStaffToUi(member, tasks));
+  const clients = clientsPage.map((client) =>
     mapApiClientToUi(client, orders)
   );
 

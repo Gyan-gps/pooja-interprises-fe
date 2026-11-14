@@ -49,12 +49,14 @@ export function OrderDetail() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [deliveryError, setDeliveryError] = useState("");
+  const [recordingDelivery, setRecordingDelivery] = useState(false);
   const [showDeliver, setShowDeliver] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deliverForm, setDeliverForm] = useState({
     receiverName: "",
     receiverMobile: "",
-    deliveryDate: "2026-06-23",
+    deliveryDate: "",
     notes: "",
     fileName: "",
   });
@@ -111,16 +113,24 @@ export function OrderDetail() {
   }
 
   async function handleDeliver() {
-    if (!deliverForm.receiverName) return;
-    await updateOrder(order!.id, {
-      deliveredTo: deliverForm.receiverName,
-      deliveredMobile: deliverForm.receiverMobile,
-      deliveredDate: deliverForm.deliveryDate,
-      deliveryNotes: deliverForm.notes,
-      acknowledgementFile: deliverForm.fileName || "acknowledgement_signed.pdf",
-    });
-    setShowDeliver(false);
-    toast.show(`Order ${order!.orderNumber} marked delivered.`);
+    if (!deliverForm.receiverName.trim() || recordingDelivery) return;
+    setRecordingDelivery(true);
+    setDeliveryError("");
+    try {
+      await updateOrder(order!.id, {
+        deliveredTo: deliverForm.receiverName.trim(),
+        deliveredMobile: deliverForm.receiverMobile,
+        deliveredDate: deliverForm.deliveryDate,
+        deliveryNotes: deliverForm.notes,
+        acknowledgementFile: deliverForm.fileName,
+      });
+      setShowDeliver(false);
+      toast.show(`Order ${order!.orderNumber} marked delivered.`);
+    } catch (error) {
+      setDeliveryError(error instanceof Error ? error.message : "Could not record delivery.");
+    } finally {
+      setRecordingDelivery(false);
+    }
   }
 
   async function handleDelete() {
@@ -388,10 +398,10 @@ export function OrderDetail() {
               <button
                 type="button"
                 onClick={handleDeliver}
-                disabled={!deliverForm.receiverName}
+                disabled={recordingDelivery || !deliverForm.receiverName.trim()}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white font-semibold text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
-                <Check size={14} /> Confirm Delivery
+                <Check size={14} /> {recordingDelivery ? "Saving…" : "Confirm Delivery"}
               </button>
             </>
           }
@@ -412,23 +422,24 @@ export function OrderDetail() {
                 <TextField label="Received By *" value={deliverForm.receiverName} onChange={v => setDeliverForm(p => ({ ...p, receiverName: v }))} placeholder="Full name of receiver" />
               </div>
               <TextField label="Mobile Number" value={deliverForm.receiverMobile} onChange={v => setDeliverForm(p => ({ ...p, receiverMobile: v }))} placeholder="98765 43210" />
-              <TextField label="Delivery Date" type="date" value={deliverForm.deliveryDate} onChange={v => setDeliverForm(p => ({ ...p, deliveryDate: v }))} />
+              <TextField label="Delivery Date (defaults to today)" type="date" value={deliverForm.deliveryDate} onChange={v => setDeliverForm(p => ({ ...p, deliveryDate: v }))} />
             </div>
           </div>
 
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Acknowledgement Proof</p>
-            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} aria-label="Upload acknowledgement proof" />
+            {deliveryError && <p role="alert" className="text-sm text-destructive">{deliveryError}</p>}
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} aria-label="Select acknowledgement file" />
             {deliverForm.fileName ? (
               <div className="border border-emerald-200 bg-emerald-50 rounded-xl p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
                   <ClipboardCheck size={18} className="text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-emerald-700">File Attached</div>
+                  <div className="text-xs font-bold text-emerald-700">Filename selected</div>
                   <div className="text-sm font-semibold text-emerald-900 truncate">{deliverForm.fileName}</div>
                 </div>
-                <button type="button" aria-label="Remove file" onClick={() => setDeliverForm(p => ({ ...p, fileName: "" }))} className="text-emerald-600 hover:text-emerald-800 cursor-pointer"><X size={14} /></button>
+                <button type="button" aria-label="Remove file" onClick={() => { if (fileRef.current) fileRef.current.value = ""; setDeliverForm(p => ({ ...p, fileName: "" })); }} className="text-emerald-600 hover:text-emerald-800 cursor-pointer"><X size={14} /></button>
               </div>
             ) : (
               <button
@@ -439,8 +450,8 @@ export function OrderDetail() {
                 <div className="w-10 h-10 rounded-xl bg-muted group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
                   <Upload size={18} className="text-muted-foreground group-hover:text-emerald-600" />
                 </div>
-                <div className="text-sm font-semibold text-muted-foreground group-hover:text-foreground">Upload signed acknowledgement slip</div>
-                <div className="text-xs text-muted-foreground">Photo, scan, or PDF · Click to browse</div>
+                <div className="text-sm font-semibold text-muted-foreground group-hover:text-foreground">Select acknowledgement file</div>
+                <div className="text-xs text-muted-foreground">Only the filename is saved.</div>
               </button>
             )}
           </div>

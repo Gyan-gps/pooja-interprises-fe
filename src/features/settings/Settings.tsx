@@ -26,11 +26,22 @@ export function Settings() {
   // Keep the form in sync if settings are ever updated elsewhere (e.g. another tab).
   useEffect(() => setForm(settings), [settings]);
 
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const isDirty = FIELDS.some(({ key }) => form[key] !== settings[key]);
 
   async function handleSave() {
-    await saveSettings(form);
-    toast.show("Settings saved.");
+    if (!isDirty || saving) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveSettings(form);
+      toast.show("Settings saved.");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not save settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -43,6 +54,7 @@ export function Settings() {
             <input
               id={id}
               value={form[key]}
+              disabled={saving}
               onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
               className="w-full text-sm font-semibold text-foreground bg-transparent border-b border-border focus:outline-none focus:border-ring pb-1 transition-colors"
             />
@@ -50,8 +62,9 @@ export function Settings() {
         ))}
       </div>
       <div className="mt-4 lg:mt-5">
-        <Button variant="primary" onClick={handleSave} className={isDirty ? "" : "opacity-50 pointer-events-none"}>
-          Save Settings
+        {saveError && <p role="alert" className="mb-2 text-sm text-destructive">{saveError}</p>}
+        <Button variant="primary" onClick={handleSave} disabled={!isDirty || saving}>
+          {saving ? "Saving…" : "Save Settings"}
         </Button>
       </div>
     </div>

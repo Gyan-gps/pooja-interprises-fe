@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useRef,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -127,17 +128,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async (input: CreateOrderInput) => {
       const created = await createOrderApi(input, clients);
       setOrders((prev) => [created, ...prev]);
-      setClients((prev) =>
-        prev.map((client) =>
-          client.id === created.clientId
-            ? {
-                ...client,
-                orders: client.orders + 1,
-                lastOrder: created.orderDate,
-              }
-            : client
-        )
-      );
       return created;
     },
     [clients]
@@ -239,13 +229,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async (input: CreateTaskInput) => {
       const created = await createTaskApi(input, orders);
       setTasks((prev) => [created, ...prev]);
-      setStaff((prev) =>
-        prev.map((member) =>
-          member.id === created.staffId
-            ? { ...member, active: member.active + 1 }
-            : member
-        )
-      );
       return created;
     },
     [orders]
@@ -270,6 +253,28 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setSettings(saved);
     return saved;
   }, []);
+
+  const clientsWithOrderCounts = useMemo(() => {
+    const totals = new Map<string, { orders: number; lastOrder: string }>();
+    for (const order of orders) {
+      const total = totals.get(order.clientId) ?? { orders: 0, lastOrder: "" };
+      total.orders += 1;
+      if (order.orderDate > total.lastOrder) total.lastOrder = order.orderDate;
+      totals.set(order.clientId, total);
+    }
+    return clients.map(client => ({ ...client, ...(totals.get(client.id) ?? { orders: 0, lastOrder: "" }) }));
+  }, [clients, orders]);
+
+  const staffWithTaskCounts = useMemo(() => {
+    const totals = new Map<string, { active: number; completed: number }>();
+    for (const task of tasks) {
+      const total = totals.get(task.staffId) ?? { active: 0, completed: 0 };
+      if (task.status === "Completed") total.completed += 1;
+      else total.active += 1;
+      totals.set(task.staffId, total);
+    }
+    return staff.map(member => ({ ...member, ...(totals.get(member.id) ?? { active: 0, completed: 0 }) }));
+  }, [staff, tasks]);
 
   if (loading) {
     return <LoadingIndicator label="Loading dashboard data…" className="min-h-dvh bg-background" />;
@@ -311,11 +316,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     createOrder,
     updateOrder,
     deleteOrder,
-    clients,
+    clients: clientsWithOrderCounts,
     createClient,
     updateClient,
     deleteClient,
-    staff,
+    staff: staffWithTaskCounts,
     createStaff,
     updateStaff,
     deleteStaff,
